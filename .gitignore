@@ -1,0 +1,9 @@
+# never commit secrets or build output
+public/
+invites/
+server/pswrds-config.php
+server/config.php
+server/pswrds-invites.php
+server/invites.php
+*.xlsx
+.DS_Store

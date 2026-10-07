@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>pswrds statistics</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/ibm-plex-sans-v23-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* Layout: one column, summary tiles first, then the sign-up chart, then the detail. */
+:root{
+  --bg:#E8EBEE; --surface:#F6F7F8; --sunken:#DDE2E6; --ink:#16212B; --muted:#56636E; --line:#C6CDD4; --grid:#DDE2E6;
+  --brass:#8F5C1C; --bar:#8F5C1C; --on-brass:#FFF8EE; --danger:#A8251C;
+  --f-display:"Unbounded","Avenir Next",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0E1318; --surface:#161D24; --sunken:#10161C; --ink:#E3E7EA; --muted:#93A0AB; --line:#2A3540; --grid:#222C36;
+  --brass:#D7A15A; --bar:#C08843; --on-brass:#1A1206; --danger:#F08A80; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.45 var(--f-body);padding:0 16px}
+.wrap{max-width:880px;margin:0 auto;padding-block:12px 48px}
+.top{display:flex;align-items:center;gap:10px;padding-block:2px 12px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.mark{font:600 19px/1 var(--f-display);display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.mark i{display:inline-block;width:6px;height:14px;background:var(--brass);border-radius:1px;margin-right:3px}
+.mark i:nth-child(2){background:var(--muted)}
+.top .t{margin-left:auto;font:500 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:600 21px/1.2 var(--f-display);margin:0 0 4px}
+h2{font:600 15px/1.3 var(--f-display);margin:0}
+.sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+form.card{max-width:380px;display:grid;gap:10px}
+.lbl{font:500 11px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input{font:inherit;color:inherit;width:100%;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:9px 11px;font-size:16px}
+input:focus{outline:none;border-color:var(--brass)}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:8px 13px;cursor:pointer}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
+.btn:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.err{color:var(--danger);font-size:13.5px;margin:0}
+.err:empty{display:none}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.tile .v{font:600 28px/1.1 var(--f-display);font-variant-numeric:tabular-nums;margin-top:6px}
+.tile .v small{font:500 14px var(--f-body);color:var(--muted)}
+.tile .n{font-size:12.5px;color:var(--muted);margin-top:4px}
+.split{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:20px}
+.split div{padding:12px 14px;border-left:1px solid var(--line);min-width:0}
+.split div:first-child{border-left:0}
+.split b{display:block;font:600 18px/1.2 var(--f-body);font-variant-numeric:tabular-nums;margin-top:4px}
+.chart{position:relative;margin-top:12px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font:11px var(--f-mono)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;padding:6px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-100%);margin-top:-8px}
+.tip b{font-weight:600}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.head .r{margin-left:auto;font-size:13px;color:var(--muted)}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--muted);font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums;margin-top:8px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.num,th.num{text-align:right}
+.tablewrap{overflow-x:auto}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px}
+.note{font-size:13px;color:var(--muted);margin-top:20px;max-width:70ch}
+.note p{margin:0 0 6px}
+@media (max-width:640px){
+  .tiles{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .tiles .tile:first-child{grid-column:1/-1}
+  .split{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .split div:nth-child(3){border-left:0}
+  .split div:nth-child(n+3){border-top:1px solid var(--line)}
+  .cols{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="mark" href="/"><span aria-hidden="true"><i></i><i></i><i></i></span>pswrds</a><span class="t">Statistics</span></header>
+
+  <form id="login" class="card" autocomplete="off">
+    <h1>Statistics</h1>
+    <label for="pass" class="lbl">Admin password</label>
+    <input id="pass" type="password" required autocomplete="current-password">
+    <p class="err" id="err" role="alert"></p>
+    <button class="btn primary" id="go">Show statistics</button>
+  </form>
+
+  <main id="stats" hidden>
+    <div class="head" style="margin-bottom:12px">
+      <h1>Statistics</h1>
+      <span class="r" id="asof"></span>
+      <button class="btn" id="refresh">Refresh</button>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><span class="lbl">Vaults now</span><div class="v" id="tTotal">0</div><div class="n" id="tTotalN"></div></div>
+      <div class="tile"><span class="lbl">New, last 7 days</span><div class="v" id="t7">0</div><div class="n" id="t7n"></div></div>
+      <div class="tile"><span class="lbl">Invitation codes used</span><div class="v" id="tInv">0</div><div class="n" id="tInvN"></div></div>
+    </div>
+
+    <div class="split" aria-label="How vaults were created">
+      <div><span class="lbl">Without code</span><b id="sPlain">0</b></div>
+      <div><span class="lbl">With code</span><b id="sInv">0</b></div>
+      <div><span class="lbl">Before tracking</span><b id="sOld">0</b></div>
+      <div><span class="lbl">Deleted</span><b id="sDel">0</b></div>
+    </div>
+
+    <div class="split" aria-label="Payments and invitation requests">
+      <div><span class="lbl">Paid vaults</span><b id="pPaid">0</b></div>
+      <div><span class="lbl">Licenses sold</span><b id="pSold">0</b></div>
+      <div><span class="lbl">Free lifetime (early users)</span><b id="pOld">0</b></div>
+      <div><span class="lbl">Codes requested on the site</span><b id="pReq">0</b></div>
+    </div>
+    <p class="hint" id="payState" style="margin:-4px 0 14px;font-size:13px;color:var(--muted)"></p>
+    <section class="card" style="margin-bottom:20px">
+      <div class="head"><h2>License code for support</h2></div>
+      <p style="font-size:14px;margin:0 0 10px">For someone whose payment didn't unlock their vault, for example because it arrived a little short. Check the payment in NOWPayments first. Each code works once, in any vault: they enter it under "I have a license code".</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="mkLic">Create a license code</button>
+        <span id="licOut" style="font:500 17px/1.2 var(--f-mono);letter-spacing:.06em"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>Sign-ups per day</h2><span class="r">Last 30 days, your time zone</span></div>
+      <div class="chart" id="chart"><div class="tip" id="tip" hidden></div></div>
+      <details>
+        <summary>Show as table</summary>
+        <div class="tablewrap"><table><thead><tr><th>Day</th><th class="num">Sign-ups</th></tr></thead><tbody id="dayRows"></tbody></table></div>
+      </details>
+    </section>
+
+    <div class="cols">
+      <section class="card">
+        <h2>Latest sign-ups</h2>
+        <div class="tablewrap"><table><thead><tr><th>When</th></tr></thead><tbody id="recent"></tbody></table></div>
+      </section>
+      <section class="card">
+        <h2>Totals over time</h2>
+        <div class="tablewrap"><table><tbody id="periods"></tbody></table></div>
+      </section>
+    </div>
+
+    <div class="note">
+      <p>Usernames, records and wallets can't be shown: the server stores only a fingerprint of each username and encrypted slots of identical size.</p>
+      <p>"Without code" and "With code" count vaults as they were created since tracking began. Deletions aren't split by type, so these are sign-up numbers, not how many of each exist today.</p>
+    </div>
+  </main>
+</div>
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  let password = "";
+  const fmtDay = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
+  const fmtFull = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const fmtWhen = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const nf = new Intl.NumberFormat();
+
+  async function load(){
+    const r = await fetch("api.php", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Pswrds": "1" }, body: JSON.stringify({ op: "stats", pass: password }) });
+    let j = null; try { j = await r.json(); } catch {}
+    if (!r.ok){ const e = new Error(j && j.error || "network"); e.line = j && j.line; throw e; }
+    return j;
+  }
+
+  $("login").addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = $("go"); btn.disabled = true; btn.textContent = "Checking…"; $("err").textContent = "";
+    password = $("pass").value;
+    try { render(await load()); $("pass").value = ""; $("login").hidden = true; $("stats").hidden = false; }
+    catch (err){
+      password = "";
+      $("err").textContent = err.message === "denied" ? "That password isn't right."
+        : err.message === "admin_not_set" ? "The statistics page is switched off. Add an admin_password of at least 12 characters to pswrds-config.php."
+        : err.message === "rate_limited" ? "Too many attempts. Wait 10 minutes."
+        : err.message === "config_syntax" ? "pswrds-config.php has a typing mistake" + (err.line ? " on line " + err.line : "") + ". Check commas and use straight quotes ('), not curly ones."
+        : "The server didn't respond. Try again.";
+    } finally { btn.disabled = false; btn.textContent = "Show statistics"; }
+  });
+  $("mkLic").onclick = async () => {
+    const b = $("mkLic"); b.disabled = true; $("licOut").textContent = "";
+    try {
+      const r = await fetch("api.php", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Pswrds": "1" }, body: JSON.stringify({ op: "admin_license", pass: password }) });
+      const j = await r.json();
+      $("licOut").textContent = r.ok && j.code ? j.code : "Couldn't create a code.";
+    } catch { $("licOut").textContent = "The server didn't respond."; }
+    b.disabled = false;
+  };
+  $("refresh").onclick = async () => { const b = $("refresh"); b.disabled = true; try { render(await load()); } catch {} b.disabled = false; };
+
+  function dayKey(d){ return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+
+  function render(s){
+    const now = new Date(s.now * 1000);
+    $("asof").textContent = "Updated " + fmtWhen.format(new Date());
+    const times = s.created_90d.map(t => new Date(t * 1000));
+    const since = days => times.filter(d => now - d < days * 86400000).length;
+    $("tTotal").textContent = nf.format(s.total);
+    $("tTotalN").textContent = s.first_created ? "First on " + fmtFull.format(new Date(s.first_created * 1000)) : "No vaults yet";
+    $("t7").textContent = nf.format(since(7));
+    $("t7n").textContent = nf.format(since(30)) + " in the last 30 days";
+    $("tInv").innerHTML = nf.format(s.invites_used) + ' <small>of ' + nf.format(s.invites_total) + '</small>';
+    $("tInvN").textContent = nf.format(Math.max(0, s.invites_total - s.invites_used)) + " still free";
+    $("sPlain").textContent = nf.format(s.created_plain);
+    $("sInv").textContent = nf.format(s.created_invited);
+    $("sOld").textContent = nf.format(s.before_tracking);
+    $("sDel").textContent = nf.format(s.deleted);
+    $("pPaid").textContent = nf.format(s.paid_vaults ?? 0);
+    $("pSold").textContent = nf.format(s.licenses_sold ?? 0);
+    $("pOld").textContent = s.grandfathered == null ? "–" : nf.format(s.grandfathered);
+    $("pReq").textContent = nf.format(s.invites_issued ?? 0);
+    $("payState").textContent = s.payments_on
+      ? `Payments are on: new vaults get ${s.free_records} free records per wallet, then $${s.price_usd} once. License codes applied to a vault: ${nf.format(s.licenses_redeemed ?? 0)} (sold: ${nf.format(s.licenses_sold ?? 0)}, made for support: ${nf.format(s.licenses_manual ?? 0)}).`
+      : "Payments are off: every vault is free and unlimited. Fill in the NOWPayments settings in pswrds-config.php to switch them on.";
+    if (s.provider === "nowpayments") $("payState").textContent += " Last notification from NOWPayments: " + (s.ipn_last_at
+      ? fmtWhen.format(new Date(s.ipn_last_at * 1000)) + (s.ipn_last_ok ? ", accepted." : ", REJECTED: the IPN secret in pswrds-config.php doesn't match the one in NOWPayments.")
+      : "never received. Check that the IPN secret is set in NOWPayments.");
+    if (s.provider === "nowpayments" && s.ipn_last) $("payState").textContent += ` It said "${s.ipn_last.status}" for invoice ${s.ipn_last.invoice_id || "?"}` +
+      (s.ipn_last.match === "none" ? ", which doesn't match any payment started in pswrds." : ", matching a payment started in pswrds.");
+
+    // 30 daily buckets in the viewer's time zone
+    const days = [];
+    for (let i = 29; i >= 0; i--){ const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push({ d, n: 0 }); }
+    const idx = new Map(days.map((x, i) => [dayKey(x.d), i]));
+    for (const t of times){ const i = idx.get(dayKey(t)); if (i !== undefined) days[i].n++; }
+    drawChart(days);
+    $("dayRows").replaceChildren(...days.slice().reverse().map(x => row([fmtFull.format(x.d), nf.format(x.n)], [false, true])));
+
+    $("recent").replaceChildren(...(times.length ? times.slice(0, 10).map(d => row([fmtWhen.format(d)])) : [row(["No sign-ups in the last 90 days"])]));
+    $("periods").replaceChildren(
+      row(["Last 24 hours", nf.format(since(1))], [false, true]),
+      row(["Last 7 days", nf.format(since(7))], [false, true]),
+      row(["Last 30 days", nf.format(since(30))], [false, true]),
+      row(["Last 90 days", nf.format(since(90))], [false, true]),
+      row(["All time (still existing)", nf.format(s.total)], [false, true]));
+  }
+
+  function row(cells, num = []){
+    const tr = document.createElement("tr");
+    cells.forEach((c, i) => { const td = document.createElement("td"); td.textContent = c; if (num[i]) td.className = "num"; tr.appendChild(td); });
+    return tr;
+  }
+
+  let lastDays = null, rt = 0;
+  addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (lastDays) drawChart(lastDays); }, 150); });
+  function drawChart(days){
+    lastDays = days; $("tip").hidden = true;
+    // Draw at the container's real width so labels stay readable on phones
+    const W = Math.max(280, Math.round($("chart").clientWidth)), H = W < 520 ? 170 : 220, L = 28, R = 4, T = 10, B = 24;
+    const every = W < 520 ? 10 : 5;
+    const max = Math.max(1, ...days.map(x => x.n));
+    // round axis top to a tidy value
+    const step = max <= 4 ? 1 : max <= 10 ? 2 : max <= 25 ? 5 : Math.ceil(max / 5 / 5) * 5;
+    const top = Math.ceil(max / step) * step;
+    const y = v => T + (H - T - B) * (1 - v / top);
+    const slot = (W - L - R) / days.length, bw = Math.max(3, slot - 2);
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Sign-ups per day for the last 30 days");
+    const el = (name, attrs, text) => { const e = document.createElementNS(ns, name); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+    for (let v = 0; v <= top; v += step){
+      el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--grid)", "stroke-width": 1 });
+      el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, String(v));
+    }
+    days.forEach((x, i) => {
+      const cx = L + slot * i + slot / 2;
+      if (x.n > 0){
+        const h = y(0) - y(x.n), r = Math.min(4, bw / 2, h);
+        const x0 = cx - bw / 2, y0 = y(x.n);
+        // rounded data end, square on the baseline
+        el("path", { d: `M${x0},${y(0)} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + bw - r} Q${x0 + bw},${y0} ${x0 + bw},${y0 + r} V${y(0)} Z`, fill: "var(--bar)" });
+      }
+      if ((29 - i) % every === 0) el("text", { x: cx, y: H - 8, "text-anchor": "middle" }, fmtDay.format(x.d));
+      const hit = el("rect", { x: L + slot * i, y: T, width: slot, height: H - T - B, fill: "transparent", tabindex: 0, "aria-label": `${fmtFull.format(x.d)}: ${x.n} sign-ups` });
+      const show = () => {
+        const tip = $("tip"), box = svg.getBoundingClientRect(), k = box.width / W;
+        tip.innerHTML = ""; const b = document.createElement("b"); b.textContent = x.n + (x.n === 1 ? " sign-up" : " sign-ups");
+        tip.append(b, document.createTextNode(" · " + fmtFull.format(x.d)));
+        tip.style.left = Math.min(box.width - 70, Math.max(70, cx * k)) + "px";
+        tip.style.top = y(x.n) * k + "px"; tip.hidden = false;
+      };
+      hit.addEventListener("pointerenter", show); hit.addEventListener("focus", show);
+      hit.addEventListener("pointerleave", () => $("tip").hidden = true); hit.addEventListener("blur", () => $("tip").hidden = true);
+    });
+    el("line", { x1: L, x2: W - R, y1: y(0), y2: y(0), stroke: "var(--muted)", "stroke-width": 1 });
+    const old = $("chart").querySelector("svg"); if (old) old.remove();
+    $("chart").prepend(svg);
+  }
+})();
+</script>
+</body>
+</html>

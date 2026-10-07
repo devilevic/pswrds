@@ -1,0 +1,53 @@
+# pswrds: Apache settings for Namecheap shared hosting
+
+DirectoryIndex index.html
+Options -Indexes
+
+# Always use HTTPS (the encryption only works on secure pages)
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# One address for the site: pswrds.com without www
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
+# The duress passphrase page used to have an unlisted address
+RewriteRule ^4m5a1r920j5x\.html$ /duress-passphrase.html [L,R=301]
+
+# Never serve settings, sources or project files
+<FilesMatch "^(config\.php|pswrds-config\.php|config\.sample\.php|invites\.php|pswrds-invites\.php|.*\.xlsx|build\.py|README\.md)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Keep the statistics page out of search engines
+<FilesMatch "^stats\.html$">
+    <IfModule mod_headers.c>
+        Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+    </IfModule>
+</FilesMatch>
+
+# App manifest and icons
+AddType application/manifest+json .webmanifest
+AddType image/svg+xml .svg
+AddType image/webp .webp
+AddType font/woff2 .woff2
+
+# The page and service worker must never be cached, so updates reach the installed app
+<FilesMatch "^(index\.html|sw\.js|manifest\.webmanifest)$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-cache"
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "no-referrer"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+</IfModule>

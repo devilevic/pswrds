@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Duress passwords and decoy vaults: a password manager with plausible deniability | pswrds</title>
+<meta name="description" content="pswrds is a zero-knowledge password manager with duress passphrases, decoy vaults and hidden wallets. Give up a passphrase under pressure and show a believable wallet, while nobody can prove the others exist.">
+<link rel="canonical" href="https://pswrds.com/duress-passphrase.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="pswrds">
+<meta property="og:url" content="https://pswrds.com/duress-passphrase.html">
+<meta property="og:title" content="Duress passphrases and decoy vaults | pswrds">
+<meta property="og:description" content="pswrds is a zero-knowledge password manager with duress passphrases, decoy vaults and hidden wallets. Give up a passphrase under pressure and show a believable wallet, while nobody can prove the others exist.">
+<meta property="og:image" content="https://pswrds.com/img/og-duress.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<!-- faq-schema: filled in by build.py from the questions on this page -->
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/ibm-plex-sans-v23-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
+<script>try{var t=localStorage.getItem("pswrds-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+:root{
+  --bg:#E8EBEE; --surface:#F6F7F8; --ink:#16212B; --muted:#56636E; --line:#C6CDD4;
+  --brass:#8F5C1C; --brass-soft:#EAD9C0; --danger:#A8251C; --danger-soft:#F4D9D6;
+  --noise-a:#C9D0D6; --noise-b:#B7C0C8;
+  --f-display:"Unbounded","Avenir Next",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1318; --surface:#161D24; --ink:#E3E7EA; --muted:#93A0AB; --line:#2A3540;
+  --brass:#D7A15A; --brass-soft:#3A2C19; --danger:#F08A80; --danger-soft:#3D1D1A;
+  --noise-a:#232D37; --noise-b:#2D3945; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1318; --surface:#161D24; --ink:#E3E7EA; --muted:#93A0AB; --line:#2A3540;
+  --brass:#D7A15A; --brass-soft:#3A2C19; --danger:#F08A80; --danger-soft:#3D1D1A;
+  --noise-a:#232D37; --noise-b:#2D3945; color-scheme:dark}
+.theme-switch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface);flex:none}
+.theme-switch button{border:0;border-radius:999px;width:34px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);background:transparent;cursor:pointer}
+.theme-switch button:hover{color:var(--ink)}
+.theme-switch button[aria-pressed="true"]{background:var(--brass);color:var(--on-brass,var(--bg))}
+.theme-switch svg{width:17px;height:17px}
+@media (prefers-reduced-motion:no-preference){.theme-switch button{transition:background-color .2s,color .2s}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--f-body);padding:0 16px}
+.wrap{max-width:720px;margin:0 auto;padding-block:20px 64px}
+.top{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.mark{font:600 19px/1 var(--f-display);display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.mark i{display:inline-block;width:6px;height:14px;background:var(--brass);border-radius:1px;margin-right:3px}
+.mark i:nth-child(2){background:var(--muted)}
+h1{font:600 clamp(22px,4vw,32px)/1.2 var(--f-display);margin:0 0 12px;text-wrap:balance}
+h2{font:600 18px/1.3 var(--f-display);margin:36px 0 10px}
+p{margin:0 0 12px;max-width:62ch}
+.lead{color:var(--muted);font-size:16px}
+.strip{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-width:420px;margin:18px 0 6px}
+.slot{aspect-ratio:3/4;border-radius:4px;border:1px solid var(--line);position:relative;
+  background:repeating-linear-gradient(45deg,var(--noise-a) 0 3px,var(--noise-b) 3px 5px),var(--noise-a);background-blend-mode:multiply}
+.slot span{position:absolute;bottom:4px;left:0;right:0;text-align:center;font:500 10px/1 var(--f-mono);color:var(--muted)}
+.caption{font-size:13px;color:var(--muted)}
+.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:8px}
+.role{border-top:2px solid var(--line);padding-top:10px;font-size:14px}
+.role .k{display:block;font:500 12px/1 var(--f-mono);color:var(--brass);margin-bottom:6px;letter-spacing:.06em}
+.role b{display:block}
+.role span{color:var(--muted)}
+ol{padding-left:22px;max-width:62ch} li{margin-bottom:8px}
+a{color:var(--brass)}
+code{font-family:var(--f-mono);font-size:.92em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.invite{border:1px solid var(--brass);background:var(--brass-soft);border-radius:8px;padding:14px 16px;margin:18px 0 6px;max-width:62ch}
+.invite b{display:block;font:600 15px/1.3 var(--f-display);margin-bottom:6px}
+.invite p{margin:0;font-size:14px}
+.note{border-left:3px solid var(--danger);background:var(--danger-soft);padding:10px 14px;border-radius:0 6px 6px 0;font-size:14px;max-width:62ch}
+.note p{margin:0 0 6px}.note p:last-child{margin:0}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--brass);color:var(--bg);text-decoration:none;font-weight:500;padding:10px 16px;border-radius:6px;margin-top:6px}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+button.btn{border:0;font:inherit;font-weight:500;cursor:pointer}
+button.btn:disabled{opacity:.6;cursor:progress}
+.btn.plain{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.inv-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.inv-code{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.inv-code .c{font:500 26px/1 var(--f-mono);letter-spacing:.14em;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.inv-msg{margin-top:10px!important;font-size:13.5px}
+.inv-msg.e{color:var(--danger)}
+.tip{font-size:13px;color:var(--muted);margin-top:10px!important}
+details.q{border-top:1px solid var(--line);max-width:66ch}
+details.q:last-of-type{border-bottom:1px solid var(--line)}
+details.q summary{cursor:pointer;list-style:none;display:flex;gap:12px;align-items:flex-start;padding:13px 2px;font-weight:600;font-size:15.5px}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary::after{content:"+";margin-left:auto;font:500 18px/1 var(--f-mono);color:var(--muted);padding-top:2px}
+details.q[open] summary::after{content:"−"}
+details.q summary:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+details.q .a{padding:0 2px 14px}
+details.q ul{padding-left:22px;margin:0 0 12px} details.q li{margin-bottom:6px}
+figure{margin:14px 0 18px;max-width:720px}
+figure img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+figcaption{font-size:13px;color:var(--muted);margin-top:7px}
+@media (max-width:520px){.roles{grid-template-columns:minmax(0,1fr)}}
+.foot{margin-top:28px;font-size:13px;color:var(--muted);display:flex;gap:6px 14px;flex-wrap:wrap}
+.foot a{color:var(--muted)}
+.foot a:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="mark" href="/"><span aria-hidden="true"><i></i><i></i><i></i></span>pswrds</a><span style="flex:1"></span>
+    <div class="theme-switch" role="group" aria-label="Theme">
+      <button type="button" data-theme-set="light" aria-pressed="false" aria-label="Light theme" title="Light theme"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="3.6"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg></button>
+      <button type="button" data-theme-set="dark" aria-pressed="false" aria-label="Dark theme" title="Dark theme"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8z"/></svg></button>
+    </div></header>
+
+  <h1>One vault. Several passphrases. Each opens a different door.</h1>
+  <p class="lead">To anyone looking at the screen or the server, a pswrds vault is an ordinary password manager. With an invitation code it becomes a password manager with plausible deniability: several passphrases, each with its own job, hidden wallets that nobody can prove exist, and duress passphrases that quietly destroy data.</p>
+
+  <div class="invite">
+    <b>An invitation code is required</b>
+    <p>The features on this page only work in a vault created with an invitation code. Without one, pswrds is a regular password manager with a single wallet. You enter the code once, when you create the vault, and it can't be added to an existing vault later. Each code can be used only once.</p>
+    <div class="inv-actions" id="invAsk"><button class="btn" id="invBtn" type="button">Request an invitation code</button></div>
+    <div id="invGot" hidden>
+      <div class="inv-code"><span class="c" id="invCode"></span><button class="btn plain" id="invCopy" type="button">Copy</button></div>
+      <div class="inv-actions"><button class="btn" id="invUse" type="button">Create a vault with this code</button></div>
+      <p class="inv-msg">The code isn't saved anywhere on this device. Copy it, or use it right away.</p>
+    </div>
+    <p class="inv-msg" id="invMsg" role="status"></p>
+    <p class="tip">Your browser history will show that you visited this page. If that matters to you, open it in a private window.</p>
+  </div>
+
+  <div class="strip" aria-label="Eight identical sealed slots">
+    <div class="slot"><span>1</span></div><div class="slot"><span>2</span></div><div class="slot"><span>3</span></div><div class="slot"><span>4</span></div>
+    <div class="slot"><span>5</span></div><div class="slot"><span>6</span></div><div class="slot"><span>7</span></div><div class="slot"><span>8</span></div>
+  </div>
+  <p class="caption">Every vault holds eight sealed slots of identical size, with or without an invitation code. Each passphrase unlocks one slot, in your browser. The server stores only scrambled data and cannot tell a wallet from a delete command from an empty slot.</p>
+
+  <h2>What each passphrase can do</h2>
+  <div class="roles">
+    <div class="role"><span class="k">MAIN</span><b>Opens your main wallet</b><span>and lets you manage every other passphrase. Never give this one away.</span></div>
+    <div class="role"><span class="k">WALLET</span><b>Opens a separate wallet</b><span>and nothing else. It can't see or reveal the others.</span></div>
+    <div class="role"><span class="k">DELETE ONE</span><b>Destroys a chosen wallet</b><span>then opens another wallet of your choice, such as one with everyday logins, or an empty one. Nothing on screen says anything happened.</span></div>
+    <div class="role"><span class="k">DELETE ALL</span><b>Destroys every slot</b><span>except your everyday wallet, then opens it. Or destroys everything and shows an empty wallet.</span></div>
+  </div>
+  <p>In security terms, a delete passphrase is a <b>duress password</b>, sometimes called a panic password or self-destruct password: you type it when you're forced to unlock, and it does its job without anyone noticing. The wallet it opens is your <b>decoy vault</b>.</p>
+
+  <h2>Setting it up</h2>
+  <ol>
+    <li>On the <a href="/">pswrds.com</a> home page, choose <b>New vault</b>, pick a username and a strong passphrase, and enter your <b>invitation code</b>. This step can't be done later: without a code, the vault stays a regular single-wallet vault.</li>
+    <li>Unlock with that passphrase. It's your main passphrase, and a <b>Passphrases</b> tab appears.</li>
+    <li>Add a wallet passphrase for each separate set of records you want, for example one you could safely reveal.</li>
+    <li>Add a wallet with everyday logins (streaming, shopping, sports apps) that you could plausibly call your only one. This becomes your decoy vault.</li>
+    <li>Add delete passphrases: one that destroys a chosen wallet and then opens your everyday wallet, or one that destroys everything except your everyday wallet and then opens it.</li>
+  </ol>
+  <p>Under pressure, give a wallet passphrase or a delete passphrase. Whoever types it sees a normal wallet. A delete passphrase deletes only once. After that, the same passphrase simply keeps opening the wallet it showed.</p>
+
+  <h2>Know the limits</h2>
+  <div class="note">
+    <p>A delete passphrase protects against someone forcing you to unlock your vault. It can't erase copies that already exist: a copy of the server's database taken earlier, or the hosting company's backups, which can keep deleted data for several weeks.</p>
+    <p>There is no recovery. If you forget your main passphrase, nobody can open the vault, including us.</p>
+  </div>
+
+  <h2>Questions and answers</h2>
+
+  <details class="q" open>
+    <summary>Who are these features for?</summary>
+    <div class="a">
+      <p>For anyone who might one day be coerced into opening their password manager in front of someone else, and for anyone who wants to keep separate parts of their life apart. For example:</p>
+      <ul>
+        <li><b>Travellers</b> asked to unlock their devices during a border search, or pressured during a robbery or an extortion attempt.</li>
+        <li><b>Journalists, lawyers, activists and researchers</b> whose sources, clients or contacts would be put at risk.</li>
+        <li><b>People in a difficult relationship or household</b>, who need some accounts to stay private even when asked for "the password".</li>
+        <li><b>Everyday separation</b>: one wallet for work, one for personal accounts, and a wallet with streaming logins you can share with family, each with its own passphrase.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="q" open>
+    <summary>What does a wallet look like to someone who opens it?</summary>
+    <div class="a">
+      <p>Exactly like an ordinary pswrds vault. Signed in with a wallet passphrase, someone sees one wallet with its records, and the same buttons every vault has. There are no tabs, switches or hints that other wallets exist.</p>
+      <figure>
+        <picture><source data-dark srcset="img/duress-passphrase-afterwipe-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/duress-passphrase-afterwipe.webp" width="1040" height="430" alt="An ordinary-looking pswrds wallet called Everyday with three records: Netflix, Nike and Spotify." loading="lazy"></picture>
+        <figcaption>The "Everyday" wallet in the demo, opened with its own passphrase, or with a delete passphrase that has just destroyed another wallet. Nothing on screen tells the difference.</figcaption>
+      </figure>
+      <p>Only your <b>main passphrase</b> shows the full picture: a row to switch between your wallets, and a <b>Passphrases</b> tab.</p>
+      <figure>
+        <picture><source data-dark srcset="img/duress-passphrase-switcher-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/duress-passphrase-switcher.webp" width="1040" height="430" alt="The main wallet with buttons to switch to the Work and Everyday wallets, and Records and Passphrases tabs." loading="lazy"></picture>
+        <figcaption>Signed in with the main passphrase: switch wallets with the buttons under the name.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>Can anyone tell how many wallets or passphrases I have?</summary>
+    <div class="a">
+      <p>No. Every pswrds vault, with or without an invitation code, has eight encrypted slots of exactly the same size. Unused slots are filled with random data that looks just like an encrypted wallet. Our server, someone with a copy of the database, and someone who has one of your passphrases all see the same eight slots and can't tell which ones are in use, or what they do.</p>
+      <p>This is what gives you plausible deniability. There is no way to prove that a hidden wallet exists, so nobody can show that the wallet you opened isn't your only one. The idea is similar to the hidden volumes of disk encryption tools such as VeraCrypt, applied to a password manager.</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>How do I set up wallets and delete passphrases?</summary>
+    <div class="a">
+      <p>Sign in with your main passphrase and open the <b>Passphrases</b> tab. On the left you see your eight slots and what each one does; on the right, a form to add a passphrase. Choose what it should do, give it a passphrase, and you're done. Each row has <b>Change</b> to give that passphrase a new one, and <b>Remove</b> to overwrite its slot with random data.</p>
+      <p>A new wallet can <b>start with a copy of another wallet's records</b>: pick it under "Start with records from". That way your everyday logins can live in both your believable everyday wallet and your real one. Later, while viewing any wallet with your main passphrase, <b>Copy to…</b> copies selected records into another wallet. These are copies, not links: changing a password in one wallet doesn't change it in the other.</p>
+      <figure>
+        <picture><source data-dark srcset="img/duress-passphrase-passphrases-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/duress-passphrase-passphrases.webp" width="1040" height="760" alt="The Passphrases tab listing eight slots: wallet passphrases, delete passphrases, unused slots and the main wallet, next to a form for adding a passphrase that deletes the Work wallet and then opens Everyday." loading="lazy"></picture>
+        <figcaption>The demo vault's slots, with a new "Delete one wallet" passphrase being added: it will destroy "Work" and then open "Everyday".</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>What exactly happens when a delete passphrase is typed?</summary>
+    <div class="a">
+      <p>In the second it takes to unlock, the chosen wallet (or every slot except one) is overwritten with random data, and the wallet you picked opens as if nothing happened. There's no warning, no confirmation and no message. From then on, the same passphrase simply opens that wallet, so typing it again does nothing suspicious.</p>
+      <p>The next time you sign in with your main passphrase, you see what happened:</p>
+      <figure>
+        <picture><source data-dark srcset="img/duress-passphrase-notice-dark.webp" media="(prefers-color-scheme: dark)"><img src="img/duress-passphrase-notice.webp" width="1040" height="330" alt="Two notices in the main wallet: Wallet Work was destroyed by a delete passphrase, and the passphrase that deletes Work was used and now opens Everyday." loading="lazy"></picture>
+        <figcaption>Only the main passphrase sees these notices.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>Which wallet should a delete passphrase open?</summary>
+    <div class="a">
+      <p>A good decoy vault looks like your only one: real, everyday logins such as streaming, shopping, sport and news apps. An empty wallet is possible, but a password manager with nothing in it can look suspicious. Whoever typed the passphrase can see and edit the wallet it opens, so keep nothing sensitive in it.</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>How is this different from a travel mode?</summary>
+    <div class="a">
+      <p>Some password managers offer a travel mode: before a trip you remove sensitive vaults from your devices and restore them when you're back. That only helps if you switch it on in advance, and only for the trip you planned. With pswrds the decoy vault and the duress passphrase are always ready, wherever you are, and nothing on the screen or the server shows which passphrase was used.</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>Can I change passphrases later?</summary>
+    <div class="a">
+      <p>Yes. With your main passphrase, use <b>Change passphrase</b> next to the wallet name for the main passphrase itself, and <b>Change</b> on the Passphrases tab for any other one. Delete passphrases that open a wallet keep working when that wallet's passphrase changes.</p>
+      <p>Someone who only has a wallet passphrase can change it from inside that wallet too. Your main passphrase then can't open that wallet any more: you'll see a notice, and its slot stays reserved so nothing in it is lost.</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>Can a wallet open with my fingerprint?</summary>
+    <div class="a">
+      <p>One wallet per device can, and never your main passphrase's wallet. Open the wallet, for example the one with Netflix and other everyday logins, press <b>Fingerprint</b> next to its name and confirm. The unlock screen on that device then shows <b>Unlock with fingerprint</b>, which opens that wallet and nothing else. Everything else still needs a passphrase.</p>
+      <p>If someone forces your finger onto the phone, they get the everyday wallet, which is usually what you'd want. The device does keep a record that it has fingerprint unlock for pswrds, but not what else is in your vault. Changing that wallet's passphrase, or deleting the wallet, turns it off.</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>How does the free limit work with several wallets?</summary>
+    <div class="a">
+      <p>Each wallet holds up to 10 records for free. One payment of $20 removes the limit for every wallet in the vault, for life. A wallet opened with its own passphrase shows the same limit and the same upgrade button as any ordinary vault.</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>Is it legal to use a delete passphrase?</summary>
+    <div class="a">
+      <p>That depends on where you are and who is asking. Protecting yourself from a thief or an abuser is one thing. Destroying information that police, customs or a court have lawfully ordered you to hand over can be a crime in itself, often more serious than whatever was in the wallet. Learn the rules that apply to you before you rely on these features. This isn't legal advice.</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>What should I never do?</summary>
+    <div class="a">
+      <ul>
+        <li><b>Never reveal your main passphrase.</b> It opens everything and shows every other passphrase's purpose.</li>
+        <li><b>Don't rely on secrecy about pswrds itself.</b> This page is public for anyone who finds it. Someone who knows pswrds may suspect there's more, so make the wallet you reveal believable.</li>
+        <li><b>Don't forget the copies.</b> A delete passphrase can't reach a copy of the database made earlier, or the hosting company's backups.</li>
+      </ul>
+      <p>For everything else, such as the encryption, the on-screen keyboard and payments, see the <a href="faq.html">general questions and answers</a>. Questions about these features: <a href="mailto:info@pswrds.com">info@pswrds.com</a>.</p>
+    </div>
+  </details>
+
+  <h2>Try it first</h2>
+  <p>The demo vault lives in your browser's memory and disappears when you reload. It comes with four passphrases, one of each kind.</p>
+  <a class="btn" href="/#demo">Open the demo</a>
+  <footer class="foot"><a href="faq.html">Questions and answers</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="security.html">Security</a><a href="https://github.com/devilevic/pswrds">Source code</a><a href="mailto:info@pswrds.com">info@pswrds.com</a></footer>
+</div>
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const enc = new TextEncoder();
+const say = (t, err) => { $("invMsg").textContent = t; $("invMsg").className = "inv-msg" + (err ? " e" : ""); };
+const call = async (method, query, body) => {
+  const r = await fetch("api.php" + query, { method, cache: "no-store",
+    headers: body ? { "Content-Type": "application/json", "X-Pswrds": "1" } : { "X-Pswrds": "1" },
+    body: body ? JSON.stringify(body) : undefined });
+  let j = null; try { j = await r.json(); } catch {}
+  return { status: r.status, j };
+};
+function zeroBits(h){ let n = 0; for (const b of h){ if (b === 0){ n += 8; continue; } n += Math.clz32(b) - 24; break; } return n; }
+// A small puzzle that takes a few seconds: it keeps scripts from collecting codes, without a CAPTCHA.
+async function solve(c, bits){
+  for (let base = 0; ; base += 512){
+    const batch = await Promise.all(Array.from({ length: 512 }, (_, i) => crypto.subtle.digest("SHA-256", enc.encode(c + ":" + (base + i)))));
+    for (let i = 0; i < batch.length; i++) if (zeroBits(new Uint8Array(batch[i])) >= bits) return String(base + i);
+  }
+}
+const errors = {
+  invite_ip_limit: "You've already requested several codes today. Try again tomorrow.",
+  invite_day_limit: "Today's invitation codes are all gone. Try again tomorrow.",
+  rate_limited: "Too many requests from your connection. Wait 10 minutes and try again.",
+};
+$("invBtn").onclick = async () => {
+  const b = $("invBtn");
+  if (!window.crypto || !crypto.subtle){ say("Open this page with https:// to request a code.", true); return; }
+  b.disabled = true; b.textContent = "Preparing your code…"; say("This takes a few seconds.");
+  try {
+    let r = await call("GET", "?op=invite_challenge");
+    if (r.status !== 200 || !r.j) throw new Error(r.j && r.j.error || "net");
+    const nonce = await solve(r.j.c, r.j.bits);
+    r = await call("POST", "", { op: "invite_request", c: r.j.c, nonce });
+    if (r.status !== 200 || !r.j || !r.j.code) throw new Error(r.j && r.j.error || "net");
+    $("invCode").textContent = r.j.code;
+    $("invAsk").hidden = true; $("invGot").hidden = false; say("");
+  } catch (e){
+    say(errors[e.message] || "Couldn't get a code right now. Check your connection and try again.", true);
+    b.disabled = false; b.textContent = "Request an invitation code";
+  }
+};
+$("invCopy").onclick = async () => {
+  try { await navigator.clipboard.writeText($("invCode").textContent); say("Copied."); }
+  catch { say("Copy was blocked here. Select the code and copy it by hand."); }
+};
+// Hands the code to the app inside this tab only, so it never appears in an address or the history.
+$("invUse").onclick = () => {
+  try { sessionStorage.setItem("pswrds-invite", $("invCode").textContent); } catch {}
+  location.href = "/";
+};
+})();
+</script>
+<script>
+/* Light/dark switch. Until someone picks, the device's own setting decides. The choice stays in this browser only. */
+(() => {
+  const K = "pswrds-theme", root = document.documentElement, mq = matchMedia("(prefers-color-scheme: dark)");
+  const eff = () => root.dataset.theme || (mq.matches ? "dark" : "light");
+  function apply(){
+    document.querySelectorAll(".theme-switch [data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === eff()));
+    document.querySelectorAll("picture source[data-dark]").forEach(s => s.media = root.dataset.theme === "dark" ? "all" : root.dataset.theme === "light" ? "not all" : "(prefers-color-scheme: dark)");
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-theme-set]"); if (!b) return;
+    root.dataset.theme = b.dataset.themeSet;
+    try { localStorage.setItem(K, b.dataset.themeSet); } catch {}
+    apply();
+  });
+  mq.addEventListener("change", apply);
+  apply();
+})();
+</script>
+</body>
+</html>

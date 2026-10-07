@@ -1,0 +1,1997 @@
+<script>try{var t=localStorage.getItem("pswrds-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<title>pswrds: a zero-knowledge password manager</title>
+<link rel="preload" href="fonts/ibm-plex-sans-v23-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* Layout: a steel-and-brass safe-deposit room. One centered working column, sealed slot strip as the signature motif. */
+:root{
+  --bg:#E8EBEE; --surface:#F6F7F8; --sunken:#DDE2E6; --ink:#16212B; --muted:#56636E; --line:#C6CDD4;
+  --brass:#8F5C1C; --brass-soft:#EAD9C0; --on-brass:#FFF8EE; --danger:#A8251C; --danger-soft:#F4D9D6; --ok:#2B6644;
+  --noise-a:#C9D0D6; --noise-b:#B7C0C8; --open:#FFFFFF; --open-line:#E1E5E9; --open-btn:#F6F7F8;
+  --f-display:"Unbounded", "Avenir Next", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1318; --surface:#161D24; --sunken:#10161C; --ink:#E3E7EA; --muted:#93A0AB; --line:#2A3540;
+  --brass:#D7A15A; --brass-soft:#3A2C19; --on-brass:#1A1206; --danger:#F08A80; --danger-soft:#3D1D1A; --ok:#7CC49A;
+  --noise-a:#232D37; --noise-b:#2D3945; --open:#333F4C; --open-line:#45525F; --open-btn:#3D4A58; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1318; --surface:#161D24; --sunken:#10161C; --ink:#E3E7EA; --muted:#93A0AB; --line:#2A3540;
+  --brass:#D7A15A; --brass-soft:#3A2C19; --on-brass:#1A1206; --danger:#F08A80; --danger-soft:#3D1D1A; --ok:#7CC49A;
+  --noise-a:#232D37; --noise-b:#2D3945; --open:#333F4C; --open-line:#45525F; --open-btn:#3D4A58; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:14.5px/1.45 var(--f-body);padding:0 16px;min-height:100vh}
+button,input,textarea,select{font:inherit;color:inherit}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600}
+p{margin:0}
+.wrap{max-width:920px;margin:0 auto;padding-block:12px 48px}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.theme-switch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface);flex:none}
+.theme-switch button{border:0;border-radius:999px;width:34px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);background:transparent;cursor:pointer}
+.theme-switch button:hover{color:var(--ink)}
+.theme-switch button[aria-pressed="true"]{background:var(--brass);color:var(--on-brass,var(--bg))}
+.theme-switch svg{width:17px;height:17px}
+@media (prefers-reduced-motion:no-preference){.theme-switch button{transition:background-color .2s,color .2s}}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Top bar */
+.top{display:flex;align-items:center;gap:8px;padding-block:2px 12px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.mark{font:600 19px/1 var(--f-display);letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.mark .dots{display:flex;gap:3px}
+.mark .dots i{width:6px;height:14px;background:var(--brass);border-radius:1px}
+.mark .dots i:nth-child(2n){background:var(--muted)}
+.spacer{flex:1}
+.pill{font:500 11px/1 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;padding:6px 9px;white-space:nowrap;border:1px solid var(--line);border-radius:99px;color:var(--muted);display:inline-flex;gap:7px;align-items:center}
+.pill .led{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.pill.st-cloud .led,.pill.st-server .led{background:var(--ok)}
+.pill.st-offline{color:var(--danger);border-color:var(--danger)} .pill.st-offline .led{background:var(--danger)}
+.offline{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid var(--danger);background:var(--danger-soft);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:14px}
+.offline p{flex:1;min-width:200px} .pill.st-demo .led,.pill.st-local .led{background:var(--brass)}
+
+/* Buttons and fields */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 13px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.danger.armed{background:var(--danger);color:var(--surface)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);background:var(--sunken)}
+.btn.sm{padding:5px 9px;font-size:13px}
+.btn.icon{padding:6px;min-width:34px;min-height:34px}
+.btn:disabled{opacity:.55;cursor:progress}
+label.f,div.f{display:grid;gap:4px;min-width:0}
+.lbl{font:500 11px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.inp{display:flex;align-items:stretch;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);min-width:0}
+.inp:focus-within{border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+.inp input,.inp textarea,.inp select{flex:1;min-width:0;border:0;background:transparent;padding:8px 11px;outline:none}
+.inp textarea{resize:vertical;min-height:64px}
+.inp .btn{border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;color:var(--muted);padding:0;min-width:38px}
+.inp .btn:last-child{border-radius:0 var(--r) var(--r) 0}
+.inp .btn:hover{color:var(--brass)}
+.mono{font-family:var(--f-mono)}
+#cInvite::placeholder{font-family:var(--f-body);font-size:14px;letter-spacing:0}
+.hint{font-size:13px;color:var(--muted)}
+.err{font-size:13.5px;color:var(--danger)}
+.err:empty{display:none}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{margin-top:4px;accent-color:var(--brass)}
+
+/* Auth */
+.auth{display:grid;grid-template-columns:minmax(0,420px);justify-content:center;gap:14px;padding-top:4vh}
+.tagline{text-align:center;font-size:13px;color:var(--muted);max-width:40ch;justify-self:center}
+.tagline a{color:var(--brass);white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px}
+.tabs{display:flex;gap:4px;background:var(--sunken);padding:4px;border-radius:8px}
+.tabs button{flex:1;border:0;background:transparent;padding:7px;border-radius:6px;cursor:pointer;font-weight:500;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.warn{border-left:3px solid var(--danger);background:var(--danger-soft);padding:10px 12px;font-size:14px;border-radius:0 var(--r) var(--r) 0}
+.slot{aspect-ratio:3/4;border-radius:4px;border:1px solid var(--line);max-width:100%;
+  background:repeating-linear-gradient(45deg,var(--noise-a) 0 3px,var(--noise-b) 3px 5px),var(--noise-a);background-blend-mode:multiply;position:relative}
+.slot span{position:absolute;bottom:4px;left:0;right:0;text-align:center;font:500 10px/1 var(--f-mono);color:var(--muted)}
+.demo{border:1px dashed var(--brass);border-radius:10px;padding:16px;display:grid;gap:12px;max-width:560px}
+.demo table{width:100%;border-collapse:collapse;font-size:14px}
+.demo td{padding:6px 0;border-top:1px solid var(--line);vertical-align:middle}
+.demo td:first-child{font-family:var(--f-mono);white-space:nowrap;padding-right:12px}
+.demo td:last-child{text-align:right}
+
+/* Vault */
+.vhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:2px}
+.vhead h2{font:600 21px/1.2 var(--f-display);min-width:0;overflow-wrap:anywhere}
+.sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+.switch{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;cursor:pointer;font-size:13.5px;white-space:nowrap;flex:none}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.vtabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.vtabs button{border:0;background:none;padding:8px 0;margin-bottom:-1px;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted);font-weight:500}
+.vtabs button[aria-selected="true"]{color:var(--ink);border-color:var(--brass)}
+.notice{background:var(--brass-soft);border-radius:var(--r);padding:8px 10px;font-size:13.5px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start}
+.notice p{flex:1}
+.bar{display:flex;gap:8px;margin-bottom:12px}
+.bar .inp{flex:1;min-width:0}
+.selbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--brass-soft);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:14px}
+.selbar .check{font-size:14px;align-items:center}
+.selbar .check input{margin-top:0}
+.selbar .grow{flex:1;min-width:100px}
+.selbar .inp{min-width:150px}
+.selbar .inp select{padding:6px 10px}
+.rec-row{display:flex;align-items:stretch}
+.rec-row .pick{display:flex;align-items:center;padding-left:14px;cursor:pointer}
+.rec-row .pick input{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
+.rec-row .rec-head{flex:1;min-width:0}
+.recs{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.recs:has(.empty){background:none;border:0}
+.rec{border-top:1px solid var(--line);min-width:0}
+.rec:first-child{border-top:0}
+.rec-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:11px 14px;min-height:44px;cursor:pointer;text-align:left}
+@media (hover:hover){.rec-head:hover{background:var(--sunken)}}
+.rec-head h3{font-size:15px;font-weight:500;flex:1;min-width:0;overflow-wrap:anywhere}
+.rec-head .cnt{font:500 12px/1 var(--f-mono);color:var(--muted)}
+.rec-head .chev{color:var(--muted)}
+.rec.open .rec-head .chev{transform:rotate(90deg)}
+.rec.open .rec-head h3{font-weight:600}
+.rec-body{display:grid;gap:8px;padding:2px 14px 12px}
+/* The open record: a brass bar on the left, and its contents on a lighter panel than the name row. */
+.rec.open{position:relative}
+.rec.open::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brass);z-index:1;pointer-events:none}
+.rec.open .rec-head{border-bottom:1px solid var(--line)}
+.rec.open .rec-body{background:var(--open)}
+.rec.open .rec-body .btn:not(.ghost){background:var(--open-btn);border-color:var(--open-line)}
+.rec.open .rec-body .pair{border-top-color:var(--open-line)}
+.rec.open .rec-body .pair:first-child{border-top:0}
+.rec-body .actions{padding-top:2px}
+@media (prefers-reduced-motion:no-preference){.rec-head .chev{transition:transform .15s}}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 16px;padding-top:8px;border-top:1px solid var(--line)}
+.cell{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;min-width:0;min-height:34px}
+.cell .row{display:flex;align-items:center;gap:2px;min-width:0}
+.cell .val{flex:0 1 auto;min-width:0;margin-right:4px;overflow-wrap:anywhere;font-size:14px}
+.cell .val.pw{font-family:var(--f-mono);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .val.pw.on{white-space:normal;overflow-wrap:anywhere}
+.note{font-size:13.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--sunken);padding:7px 10px;border-radius:var(--r)}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:24px 16px;text-align:center;color:var(--muted);display:grid;gap:12px;justify-items:center}
+
+/* Passphrase panel */
+.pp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.slotmap{display:grid;gap:4px}
+.srow{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 8px;min-height:44px}
+.srow .slot{width:22px}
+.srow .slot span{bottom:2px;font-size:9px}
+.srow .what{min-width:0;font-size:13.5px;line-height:1.3}
+.srow .what b{display:block;font-weight:600}
+.srow .what small{color:var(--muted);font-size:12.5px}
+.sbtns{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
+.srow.free{background:transparent;border-style:dashed;min-height:34px;padding-block:4px}
+.srow.free .what{color:var(--muted)}
+.tag{white-space:nowrap;font:500 10px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;border-radius:3px;background:var(--sunken);color:var(--muted);margin-left:6px;vertical-align:2px}
+.tag.d{background:var(--danger-soft);color:var(--danger)}
+.tag.m{background:var(--brass-soft);color:var(--brass)}
+.kinds{display:grid;gap:6px}
+.kind{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13.5px;line-height:1.35}
+.kind:has(input:checked){border-color:var(--brass);background:var(--brass-soft)}
+.kind input{margin-top:4px;accent-color:var(--brass)}
+.kind small{display:block;color:var(--muted);font-size:12.5px}
+.dz{margin-top:20px;border-top:1px solid var(--line);padding-top:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.dz p{flex:1;min-width:200px;font-size:13px;color:var(--muted)}
+
+/* Modal + keyboard */
+.scrim{position:fixed;inset:0;background:rgba(8,12,16,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px 24px;overflow-y:auto;z-index:20}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:100%;max-width:620px;padding:18px;display:grid;gap:12px}
+.modal h3{font:600 17px/1.2 var(--f-display)}
+.pairs-ed{display:grid;gap:10px}
+.pair-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.pair-ed .lblrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pair-ed .rmpair{padding:2px 4px;margin:-4px -4px -4px 0;font-size:12.5px;gap:4px}
+.pair-ed .rmpair svg{width:14px;height:14px}
+.pairs-ed:has(.pair-ed+.pair-ed) .pair-ed{border-top:1px solid var(--line);padding-top:8px}
+.pairs-ed .pair-ed:first-child{border-top:0;padding-top:0}
+.add{justify-self:start}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+body.kbd-open .wrap,body.kbd-open .scrim{padding-bottom:360px}
+body.kbd-open .toast{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px))}
+.kbd-wrap{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--sunken);border-top:1px solid var(--line);padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 30px rgba(0,0,0,.18)}
+.kbd{max-width:720px;margin:0 auto;display:grid;gap:8px}
+.kbd-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kbd-out{flex:1;min-width:140px;font:500 15px/1 var(--f-mono);letter-spacing:.12em;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:9px 10px;min-height:36px;overflow:hidden;white-space:nowrap}
+.keys{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}
+.key{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:10px 0;font:500 16px/1 var(--f-mono);cursor:pointer;user-select:none;touch-action:manipulation}
+/* No hover or press highlight: a screen recorder sees less. */
+.key:hover,.key:active{background:var(--surface);border-color:var(--line)}
+.kbd-row{display:grid;grid-template-columns:1.2fr 1.2fr 3fr 1.2fr 1.4fr;gap:6px}
+.kbd-row .key{font-family:var(--f-body);font-size:14px}
+.kbd-row .key[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+#qGo{width:100%;justify-content:center;gap:8px}
+.linkbtn{border:0;background:none;padding:0;color:var(--brass);text-decoration:underline;cursor:pointer;font-size:inherit}
+.quota{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+.quota p{flex:1;min-width:180px}
+.quota.full{color:var(--ink)}
+.row2{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.upmsg{font-size:inherit;color:var(--brass)}
+.upfine{font-size:12px;line-height:1.5;color:var(--muted);margin:10px 0 0}
+.upfine a{color:var(--muted)}
+.tagline.legal{margin-top:-6px}
+.tagline.legal a{color:var(--muted)}
+.ticks{margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px}
+.codebox{display:flex;align-items:center;gap:8px;background:var(--sunken);border-radius:var(--r);padding:6px 6px 6px 12px}
+.codebox span{flex:1;font:500 17px/1.2 var(--f-mono);letter-spacing:.08em;overflow-wrap:anywhere}
+details.have summary{cursor:pointer;color:var(--muted);font-size:13.5px}
+details.have[open] summary{margin-bottom:8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
+.loading{display:grid;place-items:center;min-height:40vh;color:var(--muted);gap:10px}
+
+@media (max-width:820px){
+  .pp{grid-template-columns:minmax(0,1fr)}
+  .inp input,.inp textarea,.inp select{font-size:16px} /* stops iOS from zooming into fields */
+}
+@media (max-width:600px){
+  .pair-ed{grid-template-columns:minmax(0,1fr)}
+  /* Phones: description and password stay on one line; the password column takes only the room it needs. */
+  .pair{grid-template-columns:minmax(0,1fr) minmax(0,max-content);gap:4px 10px}
+  .pair .val{margin-right:0}
+  .pair .cell:first-child .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* A revealed password needs the full width: the description moves above it. */
+  .pair.rev{grid-template-columns:minmax(0,1fr)}
+  .top .btn .t,#newRec .t,#copyMode .t{display:none}
+  .top .btn{padding:6px;min-width:34px;min-height:34px}
+  /* Narrow screens: the status pill shrinks to its coloured dot (its full text stays in the tooltip). */
+  #statusText{display:none} .pill{padding:8px}
+  .theme-switch button{width:30px}
+  #newRec,#copyMode{padding:0;min-width:44px}
+  .card{padding:14px}
+  .demo{padding:12px}
+  .demo td{font-size:13px}
+  .scrim{padding:0;align-items:stretch}
+  .modal{border-radius:0;border:0;min-height:100%;align-content:start;padding:14px 16px 0;max-width:none}
+  .modal .actions{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);margin:4px -16px 0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  .keys{gap:4px}.key{padding:12px 0;font-size:16px}
+  .kbd-row{gap:4px}
+  .kbd-top .lbl{display:none}
+  body.kbd-open .modal .actions{position:static}
+  body.kbd-open .scrim{padding-bottom:0}
+  body.kbd-open .modal{padding-bottom:360px}
+}
+@media (prefers-reduced-motion:no-preference){.btn,.chip,.kind{transition:border-color .15s,background-color .15s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="mark" aria-label="pswrds"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>pswrds</div>
+    <div class="spacer"></div>
+    <span id="status" class="pill"><span class="led"></span><span id="statusText">Connecting</span></span>
+    <div class="theme-switch" role="group" aria-label="Theme">
+      <button type="button" data-theme-set="light" aria-pressed="false" aria-label="Light theme" title="Light theme"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="3.6"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg></button>
+      <button type="button" data-theme-set="dark" aria-pressed="false" aria-label="Dark theme" title="Dark theme"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8z"/></svg></button>
+    </div>
+    <button id="installBtn" class="btn sm" hidden aria-label="Install app"><svg class="i"><use href="#i-down"/></svg><span class="t">Install app</span></button>
+    <button id="leaveDemo" class="btn sm" hidden aria-label="Leave demo"><svg class="i"><use href="#i-x"/></svg><span class="t">Leave demo</span></button>
+    <button id="lockBtn" class="btn sm" hidden aria-label="Lock"><svg class="i"><use href="#i-lock"/></svg><span class="t">Lock</span></button>
+  </header>
+
+  <main id="app">
+    <div id="booting" class="loading"><p>Connecting to the vault store…</p></div>
+    <div id="offlineBar" class="offline" role="alert" hidden>
+      <p><b>Can't reach the pswrds server.</b> Nothing can be opened or saved until the connection is back. Checking again every 10 seconds.</p>
+      <button class="btn sm" id="retryBtn">Try again</button>
+    </div>
+
+    <section id="auth" class="auth" hidden>
+      <div class="card">
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tabUnlock" aria-selected="true">Unlock</button>
+          <button role="tab" id="tabCreate" aria-selected="false">New vault</button>
+        </div>
+
+        <form id="fUnlock" class="card" style="padding:0;border:0;background:none" autocomplete="off">
+          <label class="f"><span class="lbl">Username</span>
+            <span class="inp"><input id="uUser" autocapitalize="off" spellcheck="false" maxlength="32" required></span></label>
+          <label class="f"><span class="lbl">Passphrase</span>
+            <span class="inp"><input id="uPass" type="password" required>
+              <button type="button" class="btn" data-eye="uPass" aria-label="Show passphrase"><svg class="i"><use href="#i-eye"/></svg></button>
+              <button type="button" class="btn" data-kbd="uPass" aria-label="Type with on-screen keyboard" title="On-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+          <p class="err" id="uErr" role="alert"></p>
+          <button class="btn primary" id="uGo">Unlock</button>
+          <button type="button" class="btn" id="qGo" hidden><svg class="i"><use href="#i-finger"/></svg><span id="qGoT">Unlock with fingerprint</span></button>
+          <p class="hint">On a computer you don't fully trust, use the keyboard button to enter your passphrase by clicking. The keys move every time.</p>
+          <p class="hint"><button type="button" class="linkbtn" id="openBackup">Open a backup file</button><input type="file" id="backupFile" accept=".json,application/json" hidden></p>
+        </form>
+
+        <form id="fCreate" class="card" style="padding:0;border:0;background:none" autocomplete="off" hidden>
+          <label class="f"><span class="lbl">Choose a username</span>
+            <span class="inp"><input id="cUser" autocapitalize="off" spellcheck="false" maxlength="32" required></span>
+            <span class="hint">3 to 32 characters. No email needed.</span></label>
+          <label class="f"><span class="lbl">Passphrase</span>
+            <span class="inp"><input id="cPass" type="password" required>
+              <button type="button" class="btn" data-eye="cPass" aria-label="Show passphrase"><svg class="i"><use href="#i-eye"/></svg></button>
+              <button type="button" class="btn" data-kbd="cPass" aria-label="Type with on-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span>
+            <span class="hint">At least 10 characters. Several unrelated words work well.</span></label>
+          <label class="f"><span class="lbl">Repeat passphrase</span>
+            <span class="inp"><input id="cPass2" type="password" required>
+              <button type="button" class="btn" data-kbd="cPass2" aria-label="Type with on-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+          <label class="f"><span class="lbl">Invitation code <span style="text-transform:none;letter-spacing:0">(optional)</span></span>
+            <span class="inp"><input id="cInvite" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" class="mono" placeholder="Leave empty if you don't have one"></span></label>
+          <div class="warn">There is no recovery. If you lose your passphrase, nobody can open this vault again, including us.</div>
+          <label class="check"><input type="checkbox" id="cAck" required> I understand that a lost passphrase means lost records.</label>
+          <p class="err" id="cErr" role="alert"></p>
+          <button class="btn primary" id="cGo">Create vault</button>
+        </form>
+      </div>
+
+      <p class="tagline">End-to-end encrypted. Your passwords are locked and unlocked on your device, never on our server. <a href="faq.html">How it works</a></p>
+      <p class="tagline legal"><a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a> · <a href="mailto:info@pswrds.com">info@pswrds.com</a></p>
+
+      <div class="demo" id="demoBox" hidden>
+        <div><b>Demo vault.</b> <span class="hint">Lives in memory and disappears when you reload. Username: demo</span></div>
+        <table id="demoTable">
+          <tr><td>harbor lantern 42</td><td>Main wallet</td><td><button class="btn sm" data-fill="harbor lantern 42">Use</button></td></tr>
+          <tr><td>cedar window 77</td><td>Wallet “Work”</td><td><button class="btn sm" data-fill="cedar window 77">Use</button></td></tr>
+          <tr><td>linen garden 31</td><td>Wallet “Everyday”</td><td><button class="btn sm" data-fill="linen garden 31">Use</button></td></tr>
+          <tr><td>quiet river 19</td><td>Deletes “Work”, opens “Everyday”</td><td><button class="btn sm" data-fill="quiet river 19">Use</button></td></tr>
+          <tr><td>storm glass 88</td><td>Deletes everything, opens “Everyday”</td><td><button class="btn sm" data-fill="storm glass 88">Use</button></td></tr>
+        </table>
+        <div><button class="btn" id="startDemo">Open demo vault</button> <span class="hint" id="demoHint"></span></div>
+      </div>
+    </section>
+
+    <section id="vault" hidden>
+      <div class="vhead">
+        <h2 id="wName">Wallet</h2>
+        <button class="btn ghost sm" id="renameBtn">Rename</button>
+        <button class="btn ghost sm" id="chPassBtn">Change passphrase</button>
+        <button class="btn ghost sm" id="quickBtn" hidden>Fingerprint</button>
+        <button class="btn ghost sm" id="backupBtn" title="Save an encrypted backup file of this vault">Back up</button>
+      </div>
+      <p class="sub" id="wSub"></p>
+      <div class="notice" id="backupBar" hidden><p><b>You're viewing a backup file.</b> Changes here stay in this browser and aren't saved to pswrds.com.</p><button class="btn sm primary" id="restoreBtn">Restore to pswrds.com</button></div>
+      <div id="notices"></div>
+      <div class="switch" id="switcher" hidden></div>
+      <div class="vtabs" id="vtabs" hidden>
+        <button id="vtRecords" aria-selected="true">Records</button>
+        <button id="vtPass" aria-selected="false">Passphrases</button>
+      </div>
+
+      <div id="paneRecords">
+        <div class="bar">
+          <span class="inp"><input id="search" placeholder="Search records" aria-label="Search records"><button type="button" class="btn" id="searchClear" aria-label="Clear search" title="Clear search" hidden><svg class="i"><use href="#i-x"/></svg></button><button type="button" class="btn" data-kbd="search" aria-label="Search with on-screen keyboard" title="On-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span>
+          <button class="btn" id="copyMode" hidden aria-label="Copy records to another wallet"><svg class="i"><use href="#i-copy"/></svg><span class="t">Copy to…</span></button>
+          <button class="btn primary" id="newRec" aria-label="New record"><svg class="i"><use href="#i-plus"/></svg><span class="t">New record</span></button>
+        </div>
+        <div class="selbar" id="selBar" hidden>
+          <label class="check"><input type="checkbox" id="selAll"> All</label>
+          <span class="grow" id="selCount">Pick the records to copy</span>
+          <span class="inp"><select id="selTarget" aria-label="Wallet to copy to"></select></span>
+          <button class="btn primary sm" id="selGo">Copy</button>
+          <button class="btn sm" id="selCancel">Cancel</button>
+        </div>
+        <div id="recs" class="recs"></div>
+        <div class="quota" id="quota" hidden><p id="quotaText"></p><button class="btn sm" id="quotaBtn">Remove the limit</button></div>
+      </div>
+
+      <div id="panePass" hidden>
+        <div class="pp">
+          <div>
+            <p class="lbl" style="margin-bottom:10px">Your eight slots</p>
+            <div class="slotmap" id="slotmap"></div>
+          </div>
+          <form id="fAdd" class="card" autocomplete="off">
+            <h3 style="font:600 18px/1.2 var(--f-display)">Add a passphrase</h3>
+            <div class="kinds">
+              <label class="kind"><input type="radio" name="kind" value="wallet" checked><span><b>Open a new wallet</b><small>A separate set of records with its own passphrase.</small></span></label>
+              <label class="kind"><input type="radio" name="kind" value="wipe"><span><b>Delete one wallet</b><small>Typing it destroys the wallet you pick below, then opens another wallet.</small></span></label>
+              <label class="kind"><input type="radio" name="kind" value="wipeall"><span><b>Delete everything</b><small>Typing it destroys every slot in this vault except the wallet it opens.</small></span></label>
+            </div>
+            <label class="f" id="aNameF"><span class="lbl">Wallet name</span><span class="inp"><input id="aName" maxlength="40" placeholder="Work"></span></label>
+            <label class="f" id="aFromF"><span class="lbl">Start with records from</span><span class="inp"><select id="aFrom"></select></span>
+              <span class="hint">A copy, not a link: later changes in one wallet don't change the other.</span></label>
+            <label class="f" id="aTargetF" hidden><span class="lbl">Wallet to delete</span><span class="inp"><select id="aTarget"></select></span></label>
+            <label class="f" id="aShowF" hidden><span class="lbl">Afterwards, open</span><span class="inp"><select id="aShow"></select></span>
+              <span class="hint">Pick a wallet with everyday logins so it looks like your only one. Whoever typed the passphrase can see and edit it.</span></label>
+            <label class="f" id="aThenF" hidden><span class="lbl">Afterwards, show an empty wallet named</span><span class="inp"><input id="aThen" maxlength="40" value="Personal"></span>
+              <span class="hint">Whoever typed it sees a normal, empty wallet. Nothing on screen says anything was deleted.</span></label>
+            <label class="f"><span class="lbl">Passphrase</span>
+              <span class="inp"><input id="aPass" type="password">
+                <button type="button" class="btn" data-eye="aPass" aria-label="Show passphrase"><svg class="i"><use href="#i-eye"/></svg></button>
+                <button type="button" class="btn" data-kbd="aPass" aria-label="Type with on-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+            <label class="f"><span class="lbl">Repeat passphrase</span>
+              <span class="inp"><input id="aPass2" type="password">
+                <button type="button" class="btn" data-kbd="aPass2" aria-label="Type with on-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+            <p class="err" id="aErr" role="alert"></p>
+            <button class="btn primary" id="aGo">Add passphrase</button>
+          </form>
+        </div>
+        <div class="dz">
+          <p>Delete this whole vault and username now. Every slot is overwritten, and lifetime access is deleted with it. This can't be undone.</p>
+          <button class="btn danger" id="killVault">Delete vault</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="editor" class="scrim" hidden>
+  <form class="modal" id="fRec" autocomplete="off">
+    <h3 id="edTitle">New record</h3>
+    <label class="f"><span class="lbl">Name</span><span class="inp"><input id="eTitle" maxlength="80" placeholder="Amazon"><button type="button" class="btn" data-kbd="eTitle" aria-label="Type name with on-screen keyboard" title="On-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+    <div class="pairs-ed" id="ePairs"></div>
+    <button type="button" class="btn sm add" id="ePlus"><svg class="i"><use href="#i-plus"/></svg>Add another login</button>
+    <label class="f"><span class="lbl">Note</span><span class="inp"><textarea id="eNote" maxlength="4000" placeholder="Security questions, PIN hints, recovery codes…"></textarea><button type="button" class="btn" data-kbd="eNote" aria-label="Type note with on-screen keyboard" title="On-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+    <p class="err" id="eErr" role="alert"></p>
+    <div class="actions">
+      <button class="btn primary" id="eSave">Save</button>
+      <button type="button" class="btn" id="eCancel">Cancel</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn danger" id="eDel" hidden>Delete record</button>
+    </div>
+  </form>
+</div>
+
+<div id="dupDlg" class="scrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dupTitle">
+    <h3 id="dupTitle">Some records are already there</h3>
+    <p id="dupText"></p>
+    <div class="actions">
+      <button type="button" class="btn primary" data-dup="replace">Replace them</button>
+      <button type="button" class="btn" data-dup="both">Keep both</button>
+      <button type="button" class="btn ghost" data-dup="">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="quick" class="scrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="qTitle">
+    <h3 id="qTitle">Fingerprint unlock</h3>
+    <p id="qLead"></p>
+    <p class="hint">Anyone who can unlock this device with your fingerprint or face can then open this wallet. Use it only for a wallet with everyday logins, never for anything important. Other wallets still need their passphrase.</p>
+    <p class="hint" id="qReplace" hidden>Fingerprint unlock is already set up on this device for another wallet. Turning it on here replaces that.</p>
+    <p class="err" id="qErr" role="alert"></p>
+    <div class="actions">
+      <button type="button" class="btn primary" id="qOn">Turn on</button>
+      <button type="button" class="btn" id="qOff">Turn off on this device</button>
+      <button type="button" class="btn" id="qCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="chpass" class="scrim" hidden>
+  <form class="modal" id="fChPass" autocomplete="off">
+    <h3 id="cpTitle">Change passphrase</h3>
+    <p class="hint" id="cpLead"></p>
+    <label class="f" id="cpOldF"><span class="lbl">Current passphrase</span>
+      <span class="inp"><input id="cpOld" type="password">
+        <button type="button" class="btn" data-kbd="cpOld" aria-label="Type with on-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+    <label class="f"><span class="lbl">New passphrase</span>
+      <span class="inp"><input id="cpNew" type="password">
+        <button type="button" class="btn" data-eye="cpNew" aria-label="Show passphrase"><svg class="i"><use href="#i-eye"/></svg></button>
+        <button type="button" class="btn" data-kbd="cpNew" aria-label="Type with on-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span>
+      <span class="hint">At least 10 characters.</span></label>
+    <label class="f"><span class="lbl">Repeat new passphrase</span>
+      <span class="inp"><input id="cpNew2" type="password">
+        <button type="button" class="btn" data-kbd="cpNew2" aria-label="Type with on-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+    <p class="hint">Copies of your vault made before the change, such as the hosting company's backups, can still be opened with the old passphrase for a while.</p>
+    <p class="err" id="cpErr" role="alert"></p>
+    <div class="actions">
+      <button class="btn primary" id="cpGo">Change passphrase</button>
+      <button type="button" class="btn" id="cpCancel">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div id="upgrade" class="scrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="upTitle">
+    <h3 id="upTitle">Unlimited records</h3>
+    <div id="upIntro" style="display:grid;gap:12px"><p id="upLead"></p>
+    <ul class="ticks">
+      <li>No email, no name, no subscription.</li>
+      <li>The payment isn't linked to your username. Our server only records that this vault is paid.</li>
+      <li>Pay with Bitcoin, Monero or another cryptocurrency.</li>
+    </ul></div>
+    <div id="upPay"><button type="button" class="btn primary" id="upStart"></button>
+    <p class="upfine">Unlimited records start as soon as the payment confirms. By paying you agree to the <a href="terms.html" target="_blank" rel="noopener">terms</a> and ask us to start right away, so the 14-day right of withdrawal no longer applies.</p></div>
+    <div id="upWait" class="row2" hidden>
+      <a class="btn primary" id="upLink" target="_blank" rel="noopener noreferrer">Open the payment page</a>
+      <button type="button" class="btn ghost sm" id="upCancel">Cancel this payment</button>
+      <p class="upmsg" id="upStatus" style="flex-basis:100%"></p>
+    </div>
+    <div id="upDone" hidden style="display:grid;gap:8px">
+      <p id="upDoneText"></p>
+      <div class="codebox"><span id="upCode"></span><button type="button" class="btn ghost icon" id="upCopy" aria-label="Copy license code"><svg class="i"><use href="#i-copy"/></svg></button></div>
+      <p class="upmsg" id="upCodeHint"></p>
+    </div>
+    <details class="have" id="upHave">
+      <summary>I have a license code</summary>
+      <form id="fLicense" class="row2" autocomplete="off">
+        <span class="inp" style="flex:1;min-width:200px"><input id="upLic" class="mono" maxlength="24" placeholder="XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" spellcheck="false" aria-label="License code"></span>
+        <button class="btn" id="upApply">Apply</button>
+      </form>
+    </details>
+    <p class="err" id="upErr" role="alert"></p>
+    <div class="actions"><button type="button" class="btn" id="upClose">Close</button></div>
+  </div>
+</div>
+
+<div id="kbdWrap" class="kbd-wrap" hidden>
+  <div class="kbd" role="dialog" aria-label="On-screen keyboard">
+    <div class="kbd-top">
+      <span class="lbl" id="kFor"></span><div class="kbd-out" id="kOut" aria-live="off"></div>
+      <label class="check" style="font-size:12.5px"><input type="checkbox" id="kMix" checked> Shuffle after each key</label>
+    </div>
+    <div class="keys" id="kKeys"></div>
+    <div class="kbd-row">
+      <button type="button" class="key" id="kShift" aria-pressed="false">Shift</button>
+      <button type="button" class="key" id="kSym" aria-pressed="false">#+=</button>
+      <button type="button" class="key" id="kSpace">Space</button>
+      <button type="button" class="key" id="kBack" aria-label="Delete last character">⌫</button>
+      <button type="button" class="key" id="kDone" style="background:var(--brass);color:var(--on-brass);border-color:var(--brass)">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-finger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 11v3.5c0 2.2-.6 4.3-1.7 6"/><path d="M8.6 9.4A3.5 3.5 0 0 1 15.5 11v2.5c0 1.6-.2 3.1-.6 4.6"/><path d="M5.2 15.5c.2-1.1.3-2.3.3-3.5a6.5 6.5 0 0 1 11-4.7"/><path d="M18.3 10.3c.1.6.2 1.1.2 1.7v1.5c0 2.2-.3 4.2-.9 6"/><path d="M3.6 9.5A8.6 8.6 0 0 1 7 4.7"/><path d="M10 3.6a8.6 8.6 0 0 1 9.5 3.6"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-kbd" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+</svg>
+
+<script>
+(() => {
+"use strict";
+/* ============ Constants ============ */
+const NSLOTS = 8, SLOT_BYTES = 65536, SLOT_LEN = 12 + SLOT_BYTES + 16, ITER = 600000;
+const enc = new TextEncoder(), dec = new TextDecoder();
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ============ Crypto ============ */
+function rndBytes(n){ const o = new Uint8Array(n); for (let i = 0; i < n; i += 65536) crypto.getRandomValues(o.subarray(i, Math.min(n, i + 65536))); return o; }
+function randInt(n){ const lim = Math.floor(0x100000000 / n) * n; let x; do { x = crypto.getRandomValues(new Uint32Array(1))[0]; } while (x >= lim); return x % n; }
+function b64(u8){ let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+function unb64(s){ const bin = atob(s); const o = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) o[i] = bin.charCodeAt(i); return o; }
+async function sha256hex(str){ const h = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(str))); return [...h].map(b => b.toString(16).padStart(2, "0")).join(""); }
+async function deriveRaw(pass, salt, iter){
+  const base = await crypto.subtle.importKey("raw", enc.encode(pass.normalize("NFC")), "PBKDF2", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: iter, hash: "SHA-256" }, base, 256));
+}
+const aesKey = raw => crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+const aad = (acct, idx) => enc.encode("pswrds:" + acct + ":" + idx);
+async function seal(key, acct, idx, obj){
+  const json = enc.encode(JSON.stringify(obj));
+  if (json.length > SLOT_BYTES - 4) throw new Error("FULL");
+  const pt = rndBytes(SLOT_BYTES);               // random padding: every slot is exactly the same size
+  new DataView(pt.buffer).setUint32(0, json.length); pt.set(json, 4);
+  const iv = rndBytes(12);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: aad(acct, idx) }, key, pt));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12); return out;
+}
+async function unseal(key, acct, idx, bytes){
+  try {
+    const pt = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.subarray(0, 12), additionalData: aad(acct, idx) }, key, bytes.subarray(12)));
+    const len = new DataView(pt.buffer).getUint32(0);
+    return cleanData(JSON.parse(dec.decode(pt.subarray(4, 4 + len))));
+  } catch { return null; }
+}
+const noiseSlot = () => rndBytes(SLOT_LEN);
+/* A wallet's contents can be written by anyone who has that wallet's passphrase (a shared family wallet, say),
+   and the main passphrase displays them too. So records are checked here: ids are plain letters and digits,
+   every field is a string. Text is still escaped wherever it is shown. */
+const ID_OK = /^[A-Za-z0-9]{1,32}$/;
+const str = v => typeof v === "string" ? v : "";
+function cleanData(d){
+  if (!d || typeof d !== "object") return null;
+  if (Array.isArray(d.records)){
+    const seen = new Set();
+    d.records = d.records.filter(r => r && typeof r === "object").map(r => {
+      let id = typeof r.id === "string" && ID_OK.test(r.id) && !seen.has(r.id) ? r.id : rid();
+      seen.add(id);
+      const pairs = (Array.isArray(r.pairs) ? r.pairs : []).filter(x => x && typeof x === "object").map(x => ({ user: str(x.user), pass: str(x.pass) }));
+      return { ...r, id, title: str(r.title), note: str(r.note), pairs: pairs.length ? pairs : [{ user: "", pass: "" }] };
+    });
+  }
+  return d;
+}
+
+/* ============ Storage backends ============
+   Every backend offers the same vault-level calls:
+   load(id) -> {header, slots[]} | null, create(id, header, slots, token), put(id, i, bytes, token), remove(id, token).
+   The server backend (api.php) checks the write token; the others run in one browser and don't need it. */
+const vPath = id => "vaults/" + id;
+const sPath = (id, i) => "vaults/" + id + "/slots/s" + i;
+function pathStore(mode, get, set, del){
+  return { mode,
+    async load(id){
+      const h = await get(vPath(id)); if (!h) return null;
+      const slots = await Promise.all(Array.from({ length: h.n }, (_, i) => get(sPath(id, i)).then(d => d ? unb64(d.d) : noiseSlot())));
+      return { header: { iter: h.iter, salt: h.salt, n: h.n }, slots, vers: slots.map(() => 0) };
+    },
+    async create(id, header, slots){
+      if (await get(vPath(id))) throw new Error("TAKEN");
+      await Promise.all(slots.map((b, i) => set(sPath(id, i), { d: b64(b) })));
+      await set(vPath(id), { v: 1, kdf: "PBKDF2-SHA256", ...header });
+    },
+    async put(id, i, bytes){ await set(sPath(id, i), { d: b64(bytes) }); },
+    async putMany(id, writes){ for (const [i, b] of Object.entries(writes)) await set(sPath(id, +i), { d: b64(b) }); },
+    async remove(id){
+      await Promise.all([...Array(NSLOTS).keys()].map(i => set(sPath(id, i), { d: b64(noiseSlot()) })));
+      await Promise.all([...Array(NSLOTS).keys()].map(i => del(sPath(id, i))));
+      await del(vPath(id));
+    } };
+}
+const Backends = {
+  cloud(db){ return pathStore("cloud",
+    async p => { const s = await db.doc(p).get(); return s.exists ? s.data() : null; },
+    async (p, v) => { await db.doc(p).set(v); },
+    async p => { await db.doc(p).delete(); }); },
+  local(){ return pathStore("local",
+    async p => { try { const v = localStorage.getItem("pswrds/" + p); return v ? JSON.parse(v) : null; } catch { return null; } },
+    async (p, v) => { localStorage.setItem("pswrds/" + p, JSON.stringify(v)); },
+    async p => { try { localStorage.removeItem("pswrds/" + p); } catch {} }); },
+  memory(label = "memory"){ const m = new Map(); return pathStore(label,
+    async p => m.has(p) ? JSON.parse(m.get(p)) : null,
+    async (p, v) => { m.set(p, JSON.stringify(v)); },
+    async p => { m.delete(p); }); },
+  server(url){
+    async function call(method, query, body){
+      let r;
+      try {
+        r = await fetch(url + query, { method, cache: "no-store", credentials: "same-origin",
+          headers: body ? { "Content-Type": "application/json", "X-Pswrds": "1" } : { "X-Pswrds": "1" },
+          body: body ? JSON.stringify(body) : undefined });
+      } catch { setServerUp(false); throw new Error("NET"); }
+      if (r.status === 502 || r.status === 503){ let j = null; try { j = await r.json(); } catch {} if (j && /^payment/.test(j.error)){ setServerUp(true); throw new Error("PAY"); } }
+      if (r.status >= 500){ setServerUp(false); throw new Error("NET"); }
+      setServerUp(true);
+      if (r.status === 404) return null;
+      if (r.status === 409){ let j = null; try { j = await r.json(); } catch {} throw new Error(j && j.error === "stale" ? "STALE" : "TAKEN"); }
+      if (r.status === 400){ let j = null; try { j = await r.json(); } catch {} throw new Error(j && j.error === "bad_invite" ? "INVITE" : j && j.error === "bad_license" ? "LICENSE" : "NET"); }
+      if (r.status === 403) throw new Error("DENIED");
+      if (r.status === 429) throw new Error("BUSY");
+      if (!r.ok) throw new Error("NET");
+      return r.json();
+    }
+    return { mode: "server",
+      async load(id){ const j = await call("GET", "?op=vault&id=" + id); return j ? { header: j.header, slots: j.slots.map(unb64), vers: j.v || j.slots.map(() => 0), limit: j.limit ?? null } : null; },
+      async create(id, header, slots, token, invite){ return call("POST", "", { op: "create", id, token, header, slots: slots.map(b64), ...(invite ? { invite } : {}) }); },
+      payStart(){ return call("POST", "", { op: "pay_start" }); },
+      payCheck(invoice, claim){ return call("POST", "", { op: "pay_check", invoice, claim }); },
+      redeem(id, token, code){ return call("POST", "", { op: "redeem", id, token, code }); },
+      async put(id, i, bytes, token, v){
+        const j = await call("POST", "", { op: "slot", id, token, i, d: b64(bytes), ...(Number.isInteger(v) ? { v } : {}) });
+        if (!j) throw new Error("GONE");
+        return j.v;
+      },
+      async putMany(id, writes, token, newToken, vers){
+        const slots = {}; for (const [i, b] of Object.entries(writes)) slots[i] = b64(b);
+        const j = await call("POST", "", { op: "slots", id, token, slots, ...(newToken ? { new_token: newToken } : {}), ...(vers ? { vers } : {}) });
+        if (!j) throw new Error("GONE");
+        return j.vers;
+      },
+      async remove(id, token){ await call("POST", "", { op: "delete", id, token }); } };
+  },
+};
+async function pingServer(){
+  try {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000);
+    const r = await fetch("api.php?op=ping", { cache: "no-store", signal: ctl.signal, headers: { "X-Pswrds": "1" } });
+    clearTimeout(t);
+    const j = r.ok ? await r.json() : null;
+    return !!(j && j.ok);
+  } catch { return false; }
+}
+let realStore = null, store = null;
+
+/* On the website the server is the only place vaults are kept. If it can't be reached,
+   nothing can be opened or saved: no silent fallback to browser storage. */
+let serverUp = true;
+const offline = () => store && store.mode === "server" && !serverUp;
+function setServerUp(up){
+  if (serverUp === up) return;
+  serverUp = up;
+  if (store){ setStatus(); syncOffline(); }
+}
+function syncOffline(){
+  const off = offline();
+  $("offlineBar").hidden = !off;
+  for (const id of ["uGo", "qGo", "cGo", "aGo", "eSave", "cpGo"]) if (!$(id).dataset.l || $(id).textContent === $(id).dataset.l) $(id).disabled = off;
+}
+async function retryServer(){
+  const b = $("retryBtn"); b.disabled = true; b.textContent = "Checking…";
+  if (await pingServer()) setServerUp(true);
+  b.disabled = false; b.textContent = "Try again";
+  if (offline()) toast("Still can't reach the server.");
+}
+setInterval(async () => { if (offline() && await pingServer()) setServerUp(true); }, 10000);
+
+/* ============ Vault core ============ */
+const normUser = u => u.normalize("NFC").trim().toLowerCase();
+const acctIdOf = u => sha256hex("pswrds-account:" + u);
+const hex = u8 => [...u8].map(b => b.toString(16).padStart(2, "0")).join("");
+
+/* invite: a checked invitation code. Without one the vault is an ordinary single wallet,
+   indistinguishable from any other wallet slot. With one, the slot is a "main" wallet that can
+   manage extra passphrases. Both kinds have eight identical-looking slots on the server. */
+async function createVault(username, pass, iter = ITER, invite = null){
+  const id = await acctIdOf(username);
+  const salt = rndBytes(16), w = hex(rndBytes(32));   // w: write token, kept inside every real slot
+  const raw = await deriveRaw(pass, salt, iter), key = await aesKey(raw);
+  const idx = randInt(NSLOTS);
+  const slots = Array.from({ length: NSLOTS }, noiseSlot);
+  const data = invite ? { kind: "main", name: "Main", records: [], map: {}, w } : { kind: "wallet", name: "Personal", records: [], w };
+  slots[idx] = await seal(key, id, idx, data);
+  const header = { iter, salt: b64(salt), n: NSLOTS };
+  const r = await store.create(id, header, slots, w, invite);
+  return { id, header, slots, vers: r && Array.isArray(r.v) ? r.v : slots.map(() => 0), raw, key, idx, data, w, limit: r && r.limit != null ? r.limit : null };
+}
+
+async function openVault(username, pass){
+  const id = await acctIdOf(username);
+  const v = await store.load(id);
+  const salt = v ? unb64(v.header.salt) : rndBytes(16);
+  if (v && !(Number.isInteger(v.header.iter) && v.header.iter >= 100000 && v.header.iter <= 10000000)) throw new Error("FORMAT");
+  const raw = await deriveRaw(pass, salt, v ? v.header.iter : ITER); // same work whether or not the user exists
+  if (!v) return null;
+  const key = await aesKey(raw);
+  let hit = null;
+  for (let i = 0; i < v.slots.length; i++){ const d = await unseal(key, id, i, v.slots[i]); if (d && !hit) hit = { idx: i, data: d }; }
+  if (!hit) return null;
+  return { id, header: v.header, slots: v.slots, vers: v.vers || v.slots.map(() => 0), raw, key, idx: hit.idx, data: hit.data, w: hit.data.w, limit: v.limit ?? null };
+}
+
+/* Every write says which version of the slot it replaces. If another device saved that slot meanwhile,
+   the server refuses ("STALE"), nothing is overwritten, and the latest vault is loaded again. */
+async function writeSlot(s, i, bytes){
+  let nv;
+  try { nv = await store.put(s.id, i, bytes, s.w, s.vers ? s.vers[i] : undefined); }
+  catch (e){ afterWriteError(e); throw e; }
+  s.slots[i] = bytes;
+  if (s.vers) s.vers[i] = Number.isInteger(nv) ? nv : s.vers[i] + 1;
+}
+function afterWriteError(e){
+  // Reload after the caller has handled the error (it may restore its own copy first).
+  if (e && (e.message === "STALE" || e.message === "DENIED")) setTimeout(refreshVault, 0);
+}
+
+/* Runs a delete passphrase. It works once: afterwards its slot either points at the wallet
+   it opened (an "alias", so the same passphrase keeps opening that wallet) or becomes an
+   ordinary empty wallet. */
+async function fireTrigger(s){
+  const t = s.data, jobs = [];
+  const keep = t.kind === "wipeall" && t.show != null ? t.show : -1;
+  const targets = t.kind === "wipeall" ? [...Array(NSLOTS).keys()].filter(i => i !== keep) : (t.targets || []);
+  let shown = null;
+  if (t.show != null && t.showKey && !targets.includes(t.show)){
+    const key = await aesKey(unb64(t.showKey)), d = await unseal(key, s.id, t.show, s.slots[t.show]);
+    if (d && d.kind === "wallet") shown = { idx: t.show, key, data: d, raw: unb64(t.showKey) };
+  }
+  for (const i of targets) if (i !== s.idx) jobs.push(writeSlot(s, i, noiseSlot()));
+  const next = shown ? { kind: "alias", target: t.show, key: t.showKey, w: s.w }
+                     : { kind: "wallet", name: t.then || "Personal", records: [], w: s.w };
+  jobs.push(seal(s.key, s.id, s.idx, next).then(b => writeSlot(s, s.idx, b)));
+  await Promise.all(jobs);
+  s.data = next;
+  if (shown) s.openAs = shown;
+}
+
+/* A used delete passphrase that now opens another wallet. */
+async function resolveAlias(s){
+  const a = s.data, key = await aesKey(unb64(a.key)), d = await unseal(key, s.id, a.target, s.slots[a.target]);
+  if (d && d.kind === "wallet"){ s.openAs = { idx: a.target, key, data: d, raw: unb64(a.key) }; return; }
+  // The wallet it pointed at is gone: become an ordinary empty wallet instead.
+  s.data = { kind: "wallet", name: "Personal", records: [], w: s.w };
+  await saveOwn(s);
+}
+
+/* Main passphrase: reconcile its slot map with what the slots now contain. */
+async function reconcile(s){
+  const m = s.data.map, before = JSON.parse(JSON.stringify(m)), notes = []; let changed = false;
+  const dec = {};
+  for (const [k, e] of Object.entries(m)) if (e.kind !== "detached") dec[k] = await unseal(await aesKey(unb64(e.key)), s.id, +k, s.slots[+k]);
+  // Wallets that a delete passphrase destroyed since the last check (its slot no longer holds a delete command).
+  const fired = new Set();
+  for (const [k, e] of Object.entries(m)) if (e.kind === "wipe" && dec[k] && dec[k].kind !== "wipe") e.targets.forEach(t => fired.add(t));
+  for (const [k, e] of Object.entries(m)){
+    if (e.kind === "detached"){
+      if (fired.has(+k)){ notes.push(`${e.label ? `Wallet “${e.label}”` : "A slot that couldn't be opened here"} was destroyed by a delete passphrase.`); delete m[k]; changed = true; }
+      continue;
+    }
+    const i = +k, d = dec[k];
+    if (!d){
+      if (e.kind === "wallet" && fired.has(i)){ notes.push(`Wallet “${e.label}” was destroyed by a delete passphrase.`); delete m[k]; }
+      else {
+        // Its passphrase was changed from inside, or it was destroyed: keep the slot reserved so nothing live is overwritten.
+        const what = e.kind === "wallet" ? `Wallet “${e.label}”` : e.kind === "alias" ? "A used delete passphrase" : describe(e, before);
+        notes.push(`${what} can't be opened with your main passphrase any more. Either its passphrase was changed from inside, or it was destroyed. Its slot stays reserved: you can release it on the Passphrases tab.`);
+        m[k] = { kind: "detached", was: e.kind, label: e.kind === "wallet" ? e.label : null, key: e.key };
+      }
+      changed = true;
+    }
+    else if (e.kind === "wallet"){ if (d.name !== e.label){ e.label = d.name; changed = true; } }
+    else if (e.kind === "wipe" && d.kind === "alias"){
+      notes.push(`${describe(e, before)} was used. That passphrase now opens “${before[d.target] ? before[d.target].label : "a wallet"}”.`);
+      m[k] = { kind: "alias", target: d.target, key: e.key }; changed = true;
+    }
+    else if (d.kind === "wallet" && e.kind !== "wallet"){
+      notes.push(`${e.kind === "alias" ? "A used delete passphrase" : describe(e, before)} was used. That passphrase now opens an empty wallet named “${d.name}”.`);
+      m[k] = { kind: "wallet", label: d.name, key: e.key }; changed = true;
+    }
+  }
+  for (const [k, e] of Object.entries(m)){
+    if (e.kind === "wipe" && !e.targets.some(t => t === s.idx || m[t])){
+      await writeSlot(s, +k, noiseSlot()); delete m[k]; changed = true;
+      notes.push(`A delete passphrase had nothing left to delete and was removed.`);
+    } else if ((e.kind === "wipe" || e.kind === "wipeall") && e.show != null && !(m[e.show] && m[e.show].kind === "wallet")){
+      await dropShow(s, +k); changed = true;
+    } else if (e.kind === "alias" && !(m[e.target] && m[e.target].kind === "wallet")){
+      await aliasToEmpty(s, +k); changed = true;
+    }
+  }
+  if (changed) await saveOwn(s);
+  return notes;
+}
+
+/* A delete passphrase whose "open afterwards" wallet is gone falls back to an empty wallet. */
+async function dropShow(s, k){
+  const e = s.data.map[k];
+  const plain = e.kind === "wipeall" ? { kind: "wipeall", then: e.then || "Personal", w: s.w }
+                                     : { kind: "wipe", targets: e.targets, then: e.then || "Personal", w: s.w };
+  await writeSlot(s, k, await seal(await aesKey(unb64(e.key)), s.id, k, plain));
+  delete e.show; e.then = plain.then;
+}
+
+/* A used delete passphrase whose wallet is gone keeps working: it now opens an empty wallet. */
+async function aliasToEmpty(s, k){
+  const e = s.data.map[k], plain = { kind: "wallet", name: "Personal", records: [], w: s.w };
+  await writeSlot(s, k, await seal(await aesKey(unb64(e.key)), s.id, k, plain));
+  s.data.map[k] = { kind: "wallet", label: plain.name, key: e.key };
+}
+
+async function saveOwn(s){ await writeSlot(s, s.idx, await seal(s.key, s.id, s.idx, s.data)); }
+
+function freeSlots(s){ return [...Array(NSLOTS).keys()].filter(i => i !== s.idx && !s.data.map[i]); }
+
+async function addPassphrase(s, spec, pass){
+  const salt = unb64(s.header.salt);
+  const raw = await deriveRaw(pass, salt, s.header.iter), rb = b64(raw);
+  if (rb === b64(s.raw) || Object.values(s.data.map).some(e => e.key === rb) || await keyInUse(s, raw, -1)) throw new Error("DUP");
+  const free = freeSlots(s);
+  if (!free.length) throw new Error("NOSLOT");
+  const i = free[randInt(free.length)], key = await aesKey(raw);
+  let plain, entry;
+  if (spec.kind === "wallet"){ plain = { kind: "wallet", name: spec.name, records: spec.records || [] }; entry = { kind: "wallet", label: spec.name }; }
+  else if (spec.kind === "wipe"){
+    plain = { kind: "wipe", targets: [spec.target], then: spec.then }; entry = { kind: "wipe", targets: [spec.target], then: spec.then };
+  }
+  else { plain = { kind: "wipeall", then: spec.then }; entry = { kind: "wipeall", then: spec.then }; }
+  if (spec.kind !== "wallet" && spec.show != null){
+    const sw = s.data.map[spec.show];
+    if (!sw || sw.kind !== "wallet" || spec.show === spec.target) throw new Error("SHOW");
+    plain.show = entry.show = spec.show; plain.showKey = sw.key;   // this passphrase can open that wallet
+  }
+  plain.w = s.w; entry.key = rb;
+  await writeSlot(s, i, await seal(key, s.id, i, plain));
+  s.data.map[i] = entry;
+  await saveOwn(s);
+  return i;
+}
+
+async function removeEntry(s, i){
+  const m = s.data.map, e = m[i];
+  await writeSlot(s, i, noiseSlot()); delete m[i];
+  if (e && e.kind === "wallet"){
+    for (const [k, x] of Object.entries(m)){
+      if (x.kind === "wipe" && x.targets.includes(i)){ await writeSlot(s, +k, noiseSlot()); delete m[k]; }
+      else if ((x.kind === "wipe" || x.kind === "wipeall") && x.show === i) await dropShow(s, +k);
+      else if (x.kind === "alias" && x.target === i) await aliasToEmpty(s, +k);
+    }
+  }
+  await saveOwn(s);
+}
+
+async function deleteVault(s){ await store.remove(s.id, s.w); }
+
+/* ============ Changing passphrases ============ */
+/* True if this key already opens one of the vault's slots (other than skip). Two passphrases may never open the same slot set. */
+async function keyInUse(s, raw, skip){
+  const key = await aesKey(raw);
+  for (let i = 0; i < s.slots.length; i++) if (i !== skip && await unseal(key, s.id, i, s.slots[i])) return true;
+  return false;
+}
+async function writeSlots(s, writes, newToken){
+  const vers = s.vers ? Object.fromEntries(Object.keys(writes).map(i => [i, s.vers[+i]])) : null;
+  let nv;
+  try { nv = await store.putMany(s.id, writes, s.w, newToken, vers); }
+  catch (e){ afterWriteError(e); throw e; }
+  for (const [i, b] of Object.entries(writes)){
+    s.slots[+i] = b;
+    if (s.vers) s.vers[+i] = nv && Number.isInteger(nv[i]) ? nv[i] : s.vers[+i] + 1;
+  }
+}
+
+/* The passphrase you signed in with. Re-encrypts only your own slot, so every other passphrase keeps working.
+   With the main passphrase, the vault's write token is renewed too (inside every slot it can open),
+   unless some slot can't be opened with it any more: that slot's holder would lose the ability to save. */
+async function changeOwnPassphrase(s, pass){
+  const raw = await deriveRaw(pass, unb64(s.header.salt), s.header.iter);
+  if (b64(raw) === b64(s.raw)) throw new Error("SAME");
+  if (await keyInUse(s, raw, s.idx)) throw new Error("DUP");
+  const key = await aesKey(raw), writes = {};
+  let newW = null;
+  if (s.data.kind === "main" && !Object.values(s.data.map).some(e => e.kind === "detached")){
+    const updated = {};
+    for (const [k, e] of Object.entries(s.data.map)){
+      const ek = await aesKey(unb64(e.key)), d = await unseal(ek, s.id, +k, s.slots[+k]);
+      if (!d){ newW = null; break; }
+      updated[k] = { ek, d };
+      newW = newW || hex(rndBytes(32));
+    }
+    if (!Object.keys(s.data.map).length) newW = hex(rndBytes(32));
+    if (newW) for (const [k, { ek, d }] of Object.entries(updated)){ d.w = newW; writes[k] = await seal(ek, s.id, +k, d); }
+  }
+  const data = newW ? { ...s.data, w: newW } : s.data;
+  writes[s.idx] = await seal(key, s.id, s.idx, data);
+  await writeSlots(s, writes, newW);
+  s.raw = raw; s.key = key; s.data = data;
+  if (newW){ s.w = newW; if (view && view.data && "w" in view.data) view.data.w = newW; }
+  if (view && view.idx === s.idx){ view.key = key; view.data = s.data; }
+  return !!newW;
+}
+
+/* Main passphrase: change the passphrase of another slot. Slots that hold that wallet's key
+   (a delete passphrase that opens it afterwards, or a used one that now opens it) are updated in the same write. */
+async function changeEntryPassphrase(s, k, pass){
+  const m = s.data.map, e = m[k];
+  if (!e || e.kind === "detached") throw new Error("GONE");
+  const raw = await deriveRaw(pass, unb64(s.header.salt), s.header.iter), rb = b64(raw);
+  if (rb === e.key) throw new Error("SAME");
+  if (rb === b64(s.raw) || await keyInUse(s, raw, k)) throw new Error("DUP");
+  const d = await unseal(await aesKey(unb64(e.key)), s.id, k, s.slots[k]);
+  if (!d) throw new Error("GONE");
+  const key = await aesKey(raw), writes = {};
+  writes[k] = await seal(key, s.id, k, d);
+  if (e.kind === "wallet"){
+    for (const [x, o] of Object.entries(m)){
+      const opensIt = ((o.kind === "wipe" || o.kind === "wipeall") && o.show === k) || (o.kind === "alias" && o.target === k);
+      if (!opensIt) continue;
+      const ok = await aesKey(unb64(o.key)), dx = await unseal(ok, s.id, +x, s.slots[+x]);
+      if (!dx) continue;
+      if (o.kind === "alias") dx.key = rb; else dx.showKey = rb;
+      writes[x] = await seal(ok, s.id, +x, dx);
+    }
+  }
+  const before = e.key;
+  e.key = rb;
+  writes[s.idx] = await seal(s.key, s.id, s.idx, s.data);
+  try { await writeSlots(s, writes, null); }
+  catch (err){ e.key = before; throw err; }
+  if (view && view.idx === k) view.key = key;
+}
+
+function walletLabel(m, s, t){ return t === s.idx ? "Main" : (m[t] ? (m[t].label || "a wallet that can't be opened here") : "a deleted wallet"); }
+function describe(e, m){
+  if (e.kind === "wipeall") return "Your delete-everything passphrase";
+  const t = e.targets[0];
+  return `The passphrase that deletes “${t === S?.idx ? "Main" : (m[t] ? m[t].label : "a wallet")}”`;
+}
+
+/* ============ App state ============ */
+let S = null;            // unlocked session
+let view = null;         // { idx, key, data } wallet on screen
+let notices = [];
+let revealed = new Set();
+let expanded = new Set();
+const byName = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+let lastActive = Date.now();
+
+const isMain = () => S && S.data.kind === "main";
+
+function toast(msg, ms = 2600){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, ms); }
+function setStatus(){
+  const p = $("status"), mode = offline() ? "offline" : store.mode;
+  p.className = "pill st-" + mode;
+  $("statusText").textContent = { cloud: "Synced, encrypted", server: "Synced, encrypted", offline: "Server unreachable", local: "This browser only", memory: "Not saved", demo: "Demo, in memory", backup: "Backup file" }[mode] || mode;
+  p.title = { cloud: "Encrypted slots are stored online in this app's store.", server: "Encrypted slots are stored on the pswrds server. It never sees your passphrases.", offline: "The pswrds server can't be reached. Nothing is opened or saved until it's back.", local: "Online store unavailable here. Slots are kept in this browser.", memory: "No storage available. Everything is lost on reload.", demo: "The demo vault disappears when you reload or leave the demo.", backup: "A backup file opened in this browser's memory. Changes here aren't saved to pswrds.com." }[mode];
+  $("leaveDemo").hidden = mode !== "demo" && mode !== "backup";
+  $("leaveDemo").querySelector(".t").textContent = mode === "backup" ? "Close backup" : "Leave demo";
+  $("leaveDemo").setAttribute("aria-label", mode === "backup" ? "Close backup" : "Leave demo");
+}
+function storeError(e){
+  return e && e.message === "STALE" ? "This wallet was just changed on another device, so nothing was saved here. The latest version is now loaded: please make your change again."
+    : e && e.message === "BUSY" ? "Too many attempts from your connection. Wait 10 minutes and try again."
+    : e && e.message === "DENIED" ? "The server refused this change. Lock, unlock again and retry."
+    : e && e.message === "GONE" ? "This vault no longer exists on the server."
+    : store && store.mode === "server" ? "Can't reach the pswrds server, so nothing was saved. Try again in a moment."
+    : "The vault store didn't respond. Check your connection and try again.";
+}
+function busy(btn, on, label){
+  btn.disabled = on;
+  if (on){ btn.dataset.l = btn.textContent; btn.textContent = label; }
+  else { if (btn.dataset.l) btn.textContent = btn.dataset.l; if (offline() && ["uGo", "cGo", "aGo", "eSave", "cpGo"].includes(btn.id)) btn.disabled = true; }
+}
+
+/* ============ Auth screens ============ */
+function showAuth(){
+  S = null; view = null; notices = []; revealed.clear(); expanded.clear(); picked = null; $("dupDlg").hidden = true;
+  $("auth").hidden = false; $("vault").hidden = true; $("lockBtn").hidden = true;
+  closeEditor(); closeKbd(); closeUpgrade(); stopPayPoll(); closeChPass(); closeQuick(); selectTab("u"); syncQuick();
+  ["uPass", "cPass", "cPass2", "aPass", "aPass2", "cpOld", "cpNew", "cpNew2"].forEach(id => $(id).value = "");
+}
+function selectTab(which){
+  $("tabUnlock").setAttribute("aria-selected", which === "u"); $("tabCreate").setAttribute("aria-selected", which === "c");
+  $("fUnlock").hidden = which !== "u"; $("fCreate").hidden = which !== "c";
+}
+$("tabUnlock").onclick = () => selectTab("u");
+$("tabCreate").onclick = () => selectTab("c");
+
+$("fUnlock").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const u = normUser($("uUser").value), p = $("uPass").value, btn = $("uGo");
+  $("uErr").textContent = "";
+  if (!u || !p) return;
+  busy(btn, true, "Unlocking…");
+  try {
+    const s = await openVault(u, p);
+    if (!s){ $("uErr").textContent = "That username and passphrase don't match. Check both and try again."; return; }
+    if (s.data.kind === "wipe" || s.data.kind === "wipeall") await fireTrigger(s);
+    else if (s.data.kind === "alias") await resolveAlias(s);
+    S = s; S.username = u;
+    notices = isMain() ? await reconcile(S) : [];
+    enterVault();
+  } catch (e){ console.error(e); $("uErr").textContent = storeError(e); }
+  finally { busy(btn, false); $("uPass").value = ""; }
+});
+
+$("fCreate").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const u = normUser($("cUser").value), p = $("cPass").value, err = $("cErr"), btn = $("cGo");
+  err.textContent = "";
+  if (!/^[\p{L}\p{N}._-]{3,32}$/u.test(u)){ err.textContent = "Use 3 to 32 letters, digits, dots, dashes or underscores."; return; }
+  if (p.length < 10){ err.textContent = "The passphrase needs at least 10 characters."; return; }
+  if (p !== $("cPass2").value){ err.textContent = "The two passphrases don't match."; return; }
+  const invite = $("cInvite").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (invite && !isInviteFormat(invite)){ err.textContent = "Invitation codes have 6 characters: 3 letters and 3 digits."; return; }
+  if (!$("cAck").checked){ err.textContent = "Tick the box to confirm there is no recovery."; return; }
+  busy(btn, true, "Creating…");
+  try { S = await createVault(u, p, ITER, invite || null); S.username = u; notices = []; $("cInvite").value = ""; enterVault(); toast("Vault created"); }
+  catch (e){
+    err.textContent = e.message === "TAKEN" ? "That username is taken. Pick another."
+      : e.message === "INVITE" ? "That invitation code isn't valid or has already been used."
+      : storeError(e);
+    if (!["TAKEN", "INVITE"].includes(e.message)) console.error(e);
+  }
+  finally { busy(btn, false); $("cPass").value = $("cPass2").value = ""; }
+});
+
+function isInviteFormat(c){ return /^[A-Z0-9]{6}$/.test(c) && (c.match(/[0-9]/g) || []).length === 3; }
+
+/* Demo: only offered at pswrds.com/#demo */
+function syncDemo(){ $("demoBox").hidden = location.hash !== "#demo"; }
+addEventListener("hashchange", syncDemo);
+async function buildDemo(){
+  store = Backends.memory("demo"); setStatus(); syncOffline();
+  const s = await createVault("demo", "harbor lantern 42", 150000, "DEMO00");
+  s.data.records = [
+    { id: rid(), title: "Amazon", pairs: [{ user: "ivan.example@gmail.com", pass: "T7v!qPz2-mLw9#rK" }], note: "Prime renews in March." },
+    { id: rid(), title: "Bank", pairs: [{ user: "IBAN login 4411", pass: "c0rAl-Bridge-58!" }, { user: "Card PIN reminder", pass: "see paper card" }], note: "" },
+    { id: rid(), title: "Router", pairs: [{ user: "admin", pass: "Gz8#nQ4w!Lp" }], note: "Wi-Fi: HomeNet-5G" },
+  ];
+  await saveOwn(s);
+  const work = await addPassphrase(s, { kind: "wallet", name: "Work", records: [
+    { id: rid(), title: "Company VPN", pairs: [{ user: "i.petrov", pass: "Vx3!kd9Q-ee2R" }], note: "" },
+    { id: rid(), title: "Jira", pairs: [{ user: "i.petrov@acme.example", pass: "N4#tLw8z!pQs" }], note: "" },
+  ] }, "cedar window 77");
+  const everyday = await addPassphrase(s, { kind: "wallet", name: "Everyday", records: [
+    { id: rid(), title: "Netflix", pairs: [{ user: "ivan.example@gmail.com", pass: "popcorn-Sofa-77" }], note: "" },
+    { id: rid(), title: "Nike", pairs: [{ user: "ivan.example@gmail.com", pass: "Run4est!2024" }], note: "" },
+    { id: rid(), title: "Spotify", pairs: [{ user: "ivan.example@gmail.com", pass: "bassline-Moon-12" }], note: "" },
+  ] }, "linen garden 31");
+  await addPassphrase(s, { kind: "wipe", target: work, then: "Personal", show: everyday }, "quiet river 19");
+  await addPassphrase(s, { kind: "wipeall", then: "Personal", show: everyday }, "storm glass 88");
+}
+$("startDemo").onclick = async () => {
+  const b = $("startDemo"); busy(b, true, "Building demo vault…");
+  try { await buildDemo(); $("uUser").value = "demo"; selectTab("u"); $("demoHint").textContent = "Demo ready. Pick a passphrase above, then Unlock."; toast("Demo vault ready"); }
+  catch (e){ console.error(e); toast("Couldn't build the demo in this browser."); store = realStore; setStatus(); }
+  finally { busy(b, false); b.textContent = "Rebuild demo vault"; }
+};
+document.querySelectorAll("[data-fill]").forEach(b => b.onclick = async () => {
+  if (store.mode !== "demo"){ $("startDemo").click(); await new Promise(r => { const iv = setInterval(() => { if (store.mode === "demo" && !$("startDemo").disabled){ clearInterval(iv); r(); } }, 100); }); }
+  selectTab("u"); $("uUser").value = "demo"; $("uPass").value = b.dataset.fill; $("uPass").focus();
+});
+$("leaveDemo").onclick = () => { backupInfo = null; store = realStore; setStatus(); syncOffline(); showAuth(); $("uUser").value = ""; $("demoHint").textContent = ""; $("startDemo").textContent = "Open demo vault"; };
+
+/* ============ Vault screen ============ */
+function enterVault(){
+  $("auth").hidden = true; $("vault").hidden = false; $("lockBtn").hidden = false;
+  view = S.openAs || { idx: S.idx, key: S.key, data: S.data };
+  setVTab("r"); render();
+  resumePayment();
+}
+function rid(){ return b64(rndBytes(9)).replace(/[+/=]/g, ""); }
+
+function render(){
+  const main = isMain(), own = view.idx === S.idx;
+  // Viewing another wallet through the main passphrase: its passphrase is changed on the Passphrases tab instead.
+  $("chPassBtn").hidden = main && !own;
+  $("backupBar").hidden = store.mode !== "backup";
+  syncQuickBtn();
+  $("wName").textContent = view.data.name || "Wallet";
+  $("wSub").textContent = main
+    ? (own ? `Signed in as ${S.username} with your main passphrase.` : `Viewing “${view.data.name}” through your main passphrase.`)
+    : `Signed in as ${S.username}.`;
+  $("notices").innerHTML = notices.map((n, i) => `<div class="notice"><p>${esc(n)}</p><button class="btn ghost sm" data-dismiss="${i}">Dismiss</button></div>`).join("");
+  $("switcher").hidden = !main; $("vtabs").hidden = !main;
+  if (main){
+    const wallets = [[S.idx, "Main"], ...Object.entries(S.data.map).filter(([, e]) => e.kind === "wallet").map(([k, e]) => [+k, e.label])];
+    $("switcher").innerHTML = wallets.length > 1 ? wallets.map(([i, l]) => `<button class="chip" data-wallet="${i}" aria-pressed="${i === view.idx}">${esc(l)}</button>`).join("") : "";
+    $("switcher").hidden = wallets.length < 2;
+  }
+  renderRecords();
+  if (main) renderPass();
+}
+
+function renderRecords(){
+  renderQuota(); renderCopyBar();
+  $("searchClear").hidden = !$("search").value;
+  const q = $("search").value.trim().toLowerCase();
+  const all = [...(view.data.records || [])].sort((a, b) => byName.compare(a.title || "", b.title || ""));
+  const list = q ? all.filter(r => [r.title, r.note, ...r.pairs.map(p => p.user)].join(" ").toLowerCase().includes(q)) : all;
+  if (!all.length){
+    $("recs").innerHTML = `<div class="empty"><p><b>No records yet.</b><br>Add your first login: a name like Amazon, then the username and password.</p><button class="btn primary" data-act="new"><svg class="i"><use href="#i-plus"/></svg>New record</button></div>`;
+    return;
+  }
+  if (!list.length){ $("recs").innerHTML = `<div class="empty"><p>Nothing matches “${esc(q)}”.</p></div>`; return; }
+  $("recs").innerHTML = list.map(r => {
+    const open = expanded.has(r.id);
+    const n = r.pairs.filter(p => p.user || p.pass).length;
+    const head = `<button class="rec-head" data-act="toggle" data-id="${esc(r.id)}" aria-expanded="${open}">
+        <h3>${esc(r.title || "Untitled")}</h3>
+        ${n > 1 ? `<span class="cnt">${n} accounts</span>` : ""}
+        <svg class="i chev"><use href="#i-chev"/></svg>
+      </button>`;
+    return `
+    <article class="rec${open ? " open" : ""}">
+      ${picked ? `<div class="rec-row"><label class="pick"><input type="checkbox" data-pick="${esc(r.id)}" ${picked.has(r.id) ? "checked" : ""} aria-label="Select ${esc(r.title || "Untitled")}"></label>${head}</div>` : head}
+      ${open ? `<div class="rec-body">
+      ${r.pairs.map((p, i) => { const k = r.id + ":" + i, show = revealed.has(k); return `
+      <div class="pair${show ? " rev" : ""}">
+        <div class="cell"><div class="row"><span class="val">${p.user ? esc(p.user) : '<span class="hint">none</span>'}</span>
+          ${p.user ? `<button class="btn ghost icon" data-act="copy" data-v="u" data-id="${esc(r.id)}" data-i="${i}" aria-label="Copy user"><svg class="i"><use href="#i-copy"/></svg></button>` : ""}</div></div>
+        <div class="cell"><div class="row"><span class="val pw${show ? " on" : ""}">${show ? esc(p.pass) : (p.pass ? "••••••" : '<span class="hint">none</span>')}</span>
+          ${p.pass ? `<button class="btn ghost icon" data-act="reveal" data-k="${esc(k)}" aria-label="${show ? "Hide" : "Show"} password"><svg class="i"><use href="#i-${show ? "eyeoff" : "eye"}"/></svg></button>
+          <button class="btn ghost icon" data-act="copy" data-v="p" data-id="${esc(r.id)}" data-i="${i}" aria-label="Copy password"><svg class="i"><use href="#i-copy"/></svg></button>` : ""}</div></div>
+      </div>`; }).join("")}
+      ${r.note ? `<p class="note">${esc(r.note)}</p>` : ""}
+      <div class="actions"><button class="btn sm" data-act="edit" data-id="${esc(r.id)}">Edit record</button>${copyTargets().length && !picked ? `<button class="btn sm ghost" data-act="copyone" data-id="${esc(r.id)}"><svg class="i"><use href="#i-copy"/></svg>Copy to another wallet</button>` : ""}</div>
+      </div>` : ""}
+    </article>`; }).join("");
+}
+
+function renderPass(){
+  const m = S.data.map;
+  const rows = [...Array(NSLOTS).keys()].map(i => {
+    const slot = `<div class="slot"><span>${i + 1}</span></div>`;
+    if (i === S.idx) return `<div class="srow">${slot}<div class="what"><b>Main wallet <span class="tag m">main</span></b><small>The passphrase you signed in with</small></div><span></span></div>`;
+    const e = m[i];
+    if (!e) return `<div class="srow free">${slot}<div class="what">Unused, filled with random data</div><span></span></div>`;
+    let title, sub, tag = "";
+    if (e.kind === "detached"){
+      title = e.label ? `“${esc(e.label)}” can't be opened here any more` : "A passphrase that can't be opened here any more";
+      return `<div class="srow">${slot}<div class="what"><b>${title}</b><small>Its passphrase was changed from inside, or it was destroyed. The slot stays reserved until you release it.</small></div><div class="sbtns"><button class="btn ghost sm" data-remove="${i}">Release slot</button></div></div>`;
+    }
+    if (e.kind === "wallet"){ title = `Opens “${esc(e.label)}”`; sub = "Wallet passphrase"; }
+    else if (e.kind === "wipe"){ title = `Deletes “${esc(walletLabel(m, S, e.targets[0]))}”`; sub = e.show != null ? `Then opens “${esc(walletLabel(m, S, e.show))}”` : `Then shows an empty wallet named “${esc(e.then)}”`; tag = '<span class="tag d">delete</span>'; }
+    else if (e.kind === "alias"){ title = `Opens “${esc(walletLabel(m, S, e.target))}”`; sub = "A delete passphrase that was used. It now opens this wallet."; }
+    else { title = e.show != null ? `Deletes everything except “${esc(walletLabel(m, S, e.show))}”` : "Deletes everything"; sub = e.show != null ? `Then opens “${esc(walletLabel(m, S, e.show))}”` : `Then shows an empty wallet named “${esc(e.then)}”`; tag = '<span class="tag d">delete all</span>'; }
+    return `<div class="srow">${slot}<div class="what"><b>${title}${tag}</b><small>${sub}</small></div><div class="sbtns"><button class="btn ghost sm" data-chpass="${i}">Change</button><button class="btn ghost sm" data-remove="${i}">Remove</button></div></div>`;
+  });
+  const free = freeSlots(S).length;
+  $("slotmap").innerHTML = rows.join("") + `<p class="hint" style="margin-top:6px">${free} of 7 extra slots free. Removing a passphrase overwrites its slot with random data.</p>`;
+  const wallets = [[S.idx, "Main"], ...Object.entries(m).filter(([, e]) => e.kind === "wallet").map(([k, e]) => [+k, e.label])];
+  const sel = $("aTarget"), prev = sel.value;
+  sel.innerHTML = wallets.map(([i, l]) => `<option value="${i}">${esc(l)}${i === S.idx ? " (your main wallet)" : ""}</option>`).join("");
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  fillShow();
+  const from = $("aFrom"), prevFrom = from.value;
+  from.innerHTML = `<option value="">Nothing: an empty wallet</option>` + wallets.map(([i, l]) => `<option value="${i}">${esc(l)}</option>`).join("");
+  if ([...from.options].some(o => o.value === prevFrom)) from.value = prevFrom;
+  $("aGo").disabled = free === 0;
+  if (free === 0) $("aErr").textContent = "All eight slots are in use. Remove a passphrase to add another.";
+  syncKind();
+}
+
+function setVTab(t){
+  $("vtRecords").setAttribute("aria-selected", t === "r"); $("vtPass").setAttribute("aria-selected", t === "p");
+  $("paneRecords").hidden = t !== "r"; $("panePass").hidden = t !== "p";
+}
+$("vtRecords").onclick = () => setVTab("r");
+$("vtPass").onclick = () => { if (view.idx !== S.idx) switchWallet(S.idx); setVTab("p"); };
+$("search").oninput = renderRecords;
+$("searchClear").onclick = () => { $("search").value = ""; renderRecords(); $("search").focus(); };
+$("search").addEventListener("keydown", e => { if (e.key === "Escape" && $("search").value){ e.stopPropagation(); $("search").value = ""; renderRecords(); } });
+$("newRec").onclick = () => newRecord();
+$("quotaBtn").onclick = () => openUpgrade();
+
+async function switchWallet(i){
+  if (i === S.idx){ view = { idx: S.idx, key: S.key, data: S.data }; }
+  else {
+    const e = S.data.map[i], key = await aesKey(unb64(e.key)), d = await unseal(key, S.id, i, S.slots[i]);
+    if (!d){ notices = notices.concat(await reconcile(S)); view = { idx: S.idx, key: S.key, data: S.data }; }
+    else view = { idx: i, key, data: d };
+  }
+  revealed.clear(); expanded.clear(); picked = null; $("search").value = ""; render();
+  resumePayment();
+}
+
+async function saveView(){
+  if (view.idx === S.idx){ S.data = view.data; await saveOwn(S); }
+  else await writeSlot(S, view.idx, await seal(view.key, S.id, view.idx, view.data));
+}
+
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); toast("Copied. Clear your clipboard when you're done."); }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {}
+    ta.remove(); toast(ok ? "Copied." : "Copy was blocked here. Use Show and select the text.");
+  }
+}
+
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("button"); if (!t) return;
+  if (t.dataset.dismiss != null){ notices.splice(+t.dataset.dismiss, 1); render(); return; }
+  if (t.dataset.wallet != null){ switchWallet(+t.dataset.wallet); return; }
+  if (t.dataset.eye){ const inp = $(t.dataset.eye), show = inp.type === "password"; inp.type = show ? "text" : "password"; t.innerHTML = `<svg class="i"><use href="#i-${show ? "eyeoff" : "eye"}"/></svg>`; return; }
+  if (t.dataset.kbd){ openKbd(t.dataset.kbd); return; }
+  if (t.dataset.chpass != null){ openChPass(+t.dataset.chpass); return; }
+  if (t.dataset.remove != null){
+    if (!t.classList.contains("armed")){ t.classList.add("armed", "btn", "danger"); t.textContent = "Click again to remove"; setTimeout(() => { if (t.isConnected){ t.classList.remove("armed", "danger"); t.textContent = "Remove"; } }, 4000); return; }
+    t.disabled = true;
+    try { await removeEntry(S, +t.dataset.remove); toast("Passphrase removed"); } catch (e){ console.error(e); toast(storeError(e)); }
+    render(); return;
+  }
+  const act = t.dataset.act; if (!act) return;
+  if (act === "new") newRecord();
+  else if (act === "copyone"){ startCopy([t.dataset.id]); }
+  else if (act === "edit") openEditor(t.dataset.id);
+  else if (act === "toggle"){
+    const id = t.dataset.id;
+    // Only one record is open at a time; closing a record also hides its passwords again.
+    const wasOpen = expanded.has(id);
+    expanded.clear(); revealed.clear();
+    if (!wasOpen) expanded.add(id);
+    renderRecords();
+  }
+  else if (act === "reveal"){ const k = t.dataset.k; revealed.has(k) ? revealed.delete(k) : revealed.add(k); renderRecords(); }
+  else if (act === "copy"){ const r = view.data.records.find(x => x.id === t.dataset.id), p = r && r.pairs[+t.dataset.i]; if (p) copyText(t.dataset.v === "u" ? p.user : p.pass); }
+});
+
+$("renameBtn").onclick = () => {
+  const h = $("wName"), old = view.data.name;
+  h.innerHTML = `<span class="inp" style="display:inline-flex"><input id="rnIn" maxlength="40" value="${esc(old)}" aria-label="Wallet name"></span>`;
+  const inp = $("rnIn"); inp.focus(); inp.select();
+  const done = async commit => {
+    inp.onblur = null;
+    const v = inp.value.trim();
+    if (commit && v && v !== old){
+      view.data.name = v;
+      try {
+        if (isMain() && view.idx !== S.idx && S.data.map[view.idx]){ S.data.map[view.idx].label = v; await saveOwn(S); }
+        await saveView(); toast("Renamed");
+      } catch (e){
+        view.data.name = old;
+        if (isMain() && view.idx !== S.idx && S.data.map[view.idx]) S.data.map[view.idx].label = old;
+        toast(storeError(e));
+      }
+    }
+    render();
+  };
+  inp.onkeydown = e => { if (e.key === "Enter") done(true); if (e.key === "Escape") done(false); };
+  inp.onblur = () => done(true);
+};
+
+/* Add passphrase form */
+function fillShow(){
+  const k = document.querySelector('input[name="kind"]:checked').value;
+  const sel = $("aShow"), prev = sel.value, target = k === "wipe" ? +$("aTarget").value : -1, m = S.data.map;
+  const opts = Object.entries(m).filter(([k, e]) => e.kind === "wallet" && +k !== target).sort((a, b) => byName.compare(a[1].label, b[1].label));
+  sel.innerHTML = `<option value="">An empty wallet</option>` + opts.map(([k, e]) => `<option value="${k}">${esc(e.label)}</option>`).join("");
+  // Default to a real wallet (the point of this option) until the user picks something else.
+  sel.value = sel.dataset.touched && [...sel.options].some(o => o.value === prev) ? prev : (opts.length ? opts[0][0] : "");
+  syncKind();
+}
+function syncKind(){
+  const k = document.querySelector('input[name="kind"]:checked').value;
+  $("aNameF").hidden = $("aFromF").hidden = k !== "wallet"; $("aTargetF").hidden = k !== "wipe"; $("aShowF").hidden = k === "wallet";
+  $("aThenF").hidden = !(k !== "wallet" && $("aShow").value === "");
+}
+$("aTarget").onchange = fillShow;
+$("aShow").onchange = () => { $("aShow").dataset.touched = "1"; syncKind(); };
+document.querySelectorAll('input[name="kind"]').forEach(r => r.onchange = fillShow);
+$("fAdd").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const k = document.querySelector('input[name="kind"]:checked').value, err = $("aErr"), p = $("aPass").value, btn = $("aGo");
+  err.textContent = "";
+  const spec = { kind: k };
+  if (k === "wallet"){ spec.name = $("aName").value.trim(); if (!spec.name){ err.textContent = "Give the wallet a name."; return; } }
+  if (k === "wipe") spec.target = +$("aTarget").value;
+  if (k !== "wallet" && $("aShow").value !== "") spec.show = +$("aShow").value;
+  if (k !== "wallet"){ spec.then = $("aThen").value.trim() || "Personal"; }
+  if (p.length < 10){ err.textContent = "The passphrase needs at least 10 characters."; return; }
+  if (p !== $("aPass2").value){ err.textContent = "The two passphrases don't match."; return; }
+  busy(btn, true, "Sealing slot…");
+  try {
+    if (k === "wallet" && $("aFrom").value !== ""){
+      const src = await walletData(+$("aFrom").value);
+      if (!src){ err.textContent = "That wallet can't be read any more. Lock, unlock and try again."; return; }
+      const recs = (src.data.records || []).map(cloneRecord);
+      if (lim() && recs.length > lim()){ err.textContent = `“${src.label}” has ${recs.length} records, more than the ${lim()} a free wallet holds. Remove the limit first, or start with an empty wallet and copy records later.`; return; }
+      spec.records = recs;
+    }
+    await addPassphrase(S, spec, p);
+    $("aPass").value = $("aPass2").value = ""; $("aName").value = "";
+    toast(k === "wallet" ? `Wallet “${spec.name}” created${spec.records && spec.records.length ? ` with ${spec.records.length} record${spec.records.length === 1 ? "" : "s"}` : ""}` : "Delete passphrase added");
+    $("aFrom").value = "";
+  } catch (e){
+    err.textContent = e.message === "DUP" ? "That passphrase is already used in this vault. Choose a different one."
+      : e.message === "NOSLOT" ? "All eight slots are in use."
+      : e.message === "SHOW" ? "Pick a different wallet to open afterwards: it can't be the one being deleted."
+      : storeError(e);
+    if (!["DUP", "NOSLOT", "SHOW"].includes(e.message)) console.error(e);
+  } finally { busy(btn, false); render(); }
+});
+
+$("killVault").onclick = async () => {
+  const b = $("killVault");
+  if (!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "Click again to delete everything"; setTimeout(() => { b.classList.remove("armed"); b.textContent = "Delete vault"; }, 4000); return; }
+  busy(b, true, "Deleting…");
+  try { await deleteVault(S); showAuth(); toast("Vault deleted"); } catch (e){ console.error(e); toast(storeError(e)); }
+  finally { busy(b, false); b.classList.remove("armed"); b.textContent = "Delete vault"; }
+};
+
+/* ============ Record editor ============ */
+let draft = null;
+function genPass(len = 20){
+  const cs = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!#$%&*+-=?@_";
+  return Array.from({ length: len }, () => cs[randInt(cs.length)]).join("");
+}
+function openEditor(id){
+  const r = id ? view.data.records.find(x => x.id === id) : null;
+  draft = r ? JSON.parse(JSON.stringify(r)) : { id: rid(), title: "", pairs: [{ user: "", pass: "" }], note: "" };
+  draft._new = !r;
+  $("edTitle").textContent = r ? "Edit record" : "New record";
+  $("eTitle").value = draft.title; $("eNote").value = draft.note; $("eErr").textContent = "";
+  $("eDel").hidden = !r; $("eDel").classList.remove("armed"); $("eDel").textContent = "Delete record";
+  renderPairs(); $("editor").hidden = false; $("eTitle").focus();
+}
+function closeEditor(){ $("editor").hidden = true; draft = null; }
+function renderPairs(){
+  $("ePairs").innerHTML = draft.pairs.map((p, i) => `
+    <div class="pair-ed">
+      <label class="f"><span class="lbl">User or description</span><span class="inp"><input id="pu${i}" data-pi="${i}" data-pf="user" value="${esc(p.user)}" placeholder="myemail@gmail.com" autocapitalize="off" spellcheck="false"><button type="button" class="btn" data-kbd="pu${i}" aria-label="Type user with on-screen keyboard" title="On-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></label>
+      <div class="f"><div class="lblrow"><label class="lbl" for="pp${i}">Password</label>${draft.pairs.length > 1 ? `<button type="button" class="btn ghost rmpair" data-rmpair="${i}" aria-label="Remove login ${i + 1}"><svg class="i"><use href="#i-x"/></svg>Remove</button>` : ""}</div><span class="inp"><input id="pp${i}" data-pi="${i}" data-pf="pass" type="password" value="${esc(p.pass)}" class="mono" spellcheck="false">
+        <button type="button" class="btn" data-eye="pp${i}" aria-label="Show password"><svg class="i"><use href="#i-eye"/></svg></button>
+        <button type="button" class="btn" data-gen="${i}" aria-label="Generate a strong password" title="Generate"><svg class="i"><use href="#i-dice"/></svg></button>
+        <button type="button" class="btn" data-kbd="pp${i}" aria-label="Type password with on-screen keyboard" title="On-screen keyboard"><svg class="i"><use href="#i-kbd"/></svg></button></span></div>
+    </div>`).join("");
+}
+$("ePairs").addEventListener("input", e => { const i = e.target.dataset.pi; if (i != null) draft.pairs[+i][e.target.dataset.pf] = e.target.value; });
+$("ePairs").addEventListener("click", e => {
+  const g = e.target.closest("[data-gen]"), rm = e.target.closest("[data-rmpair]");
+  if (g){ const i = +g.dataset.gen; draft.pairs[i].pass = genPass(); renderPairs(); $("pp" + i).type = "text"; }
+  if (rm){ draft.pairs.splice(+rm.dataset.rmpair, 1); renderPairs(); }
+});
+$("ePlus").onclick = () => { draft.pairs.push({ user: "", pass: "" }); renderPairs(); $("pu" + (draft.pairs.length - 1)).focus(); };
+$("eCancel").onclick = closeEditor;
+$("editor").addEventListener("mousedown", e => { if (e.target === $("editor")) closeEditor(); });
+$("fRec").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  draft.title = $("eTitle").value.trim(); draft.note = $("eNote").value;
+  if (!draft.title){ $("eErr").textContent = "Give the record a name, such as Amazon."; return; }
+  if (draft._new && atLimit()){ closeEditor(); openUpgrade(); return; }
+  draft.pairs = draft.pairs.filter((p, i, a) => p.user || p.pass || a.length === 1);
+  const isNew = draft._new; delete draft._new;
+  const recs = view.data.records, prev = JSON.stringify(recs);
+  const i = recs.findIndex(x => x.id === draft.id);
+  if (i >= 0) recs[i] = draft; else recs.push(draft);
+  const btn = $("eSave"); busy(btn, true, "Saving…");
+  try { await saveView(); expanded.clear(); revealed.clear(); expanded.add(draft.id); closeEditor(); renderRecords(); toast(isNew ? "Record added" : "Record saved"); }
+  catch (e){ view.data.records = JSON.parse(prev); draft._new = isNew; $("eErr").textContent = e.message === "FULL" ? "This wallet is full (64 KB). Shorten notes or move records to another wallet." : storeError(e); }
+  finally { busy(btn, false); }
+});
+$("eDel").onclick = async () => {
+  const b = $("eDel");
+  if (!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "Click again to delete"; return; }
+  view.data.records = view.data.records.filter(x => x.id !== draft.id);
+  try { await saveView(); toast("Record deleted"); } catch (e) { toast(storeError(e)); }
+  closeEditor(); renderRecords();
+};
+
+/* ============ On-screen keyboard ============ */
+const SETS = {
+  lower: "abcdefghijklmnopqrstuvwxyz0123456789".split(""),
+  upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""),
+  sym: "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~€£".split(""),
+};
+const KB = { target: null, mode: "lower", order: [] };
+function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = randInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function drawKeys(){
+  KB.order = shuffle(SETS[KB.mode]);
+  $("kKeys").innerHTML = KB.order.map((c, i) => `<button type="button" class="key" data-ki="${i}">${esc(c)}</button>`).join("");
+  $("kShift").setAttribute("aria-pressed", KB.mode === "upper"); $("kSym").setAttribute("aria-pressed", KB.mode === "sym");
+}
+function drawOut(){
+  const t = KB.target; if (!t) return;
+  const secret = t.type === "password", v = t.value;
+  $("kOut").textContent = secret ? "•".repeat(Math.min(v.length, 40)) : v.slice(-40);
+  const lab = t.closest("label, .f"); $("kFor").textContent = lab ? (lab.querySelector(".lbl")?.textContent || "") : (t.getAttribute("aria-label") || "");
+}
+function openKbd(id){ KB.target = $(id); KB.mode = "lower"; drawKeys(); drawOut(); $("kbdWrap").hidden = false; document.body.classList.add("kbd-open"); KB.target.scrollIntoView({ block: "center", behavior: "smooth" }); }
+function closeKbd(){ $("kbdWrap").hidden = true; KB.target = null; document.body.classList.remove("kbd-open"); }
+const kChanged = () => KB.target.dispatchEvent(new Event("input", { bubbles: true }));
+function kType(ch){ if (!KB.target) return; KB.target.value += ch; kChanged(); drawOut(); if ($("kMix").checked) drawKeys(); }
+// pointerdown keeps focus where it was and fires before any hover state could render
+$("kKeys").addEventListener("pointerdown", e => { const k = e.target.closest("[data-ki]"); if (!k) return; e.preventDefault(); kType(KB.order[+k.dataset.ki]); });
+$("kKeys").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ const k = e.target.closest("[data-ki]"); if (k){ e.preventDefault(); kType(KB.order[+k.dataset.ki]); } } });
+$("kShift").onclick = () => { KB.mode = KB.mode === "upper" ? "lower" : "upper"; drawKeys(); };
+$("kSym").onclick = () => { KB.mode = KB.mode === "sym" ? "lower" : "sym"; drawKeys(); };
+$("kSpace").onclick = () => kType(" ");
+$("kBack").onclick = () => { if (KB.target){ KB.target.value = KB.target.value.slice(0, -1); kChanged(); drawOut(); } };
+$("kDone").onclick = () => { const t = KB.target; closeKbd(); if (t){ const f = t.form; if (f && t.id === "uPass") f.requestSubmit(); } };
+
+/* ============ Staying in step with other devices ============ */
+let refreshing = false;
+async function refreshVault(){
+  if (!S || refreshing) return;
+  refreshing = true;
+  const s = S;
+  try {
+    const v = await store.load(s.id);
+    if (S !== s) return;
+    if (!v){ showAuth(); toast("This vault no longer exists."); return; }
+    const d = await unseal(s.key, s.id, s.idx, v.slots[s.idx]);
+    if (!d){ showAuth(); toast("Your passphrase was changed on another device. Unlock again with the new one."); return; }
+    s.slots = v.slots; s.vers = v.vers || s.vers; if (v.limit !== undefined) s.limit = v.limit;
+    s.data = d; if (d.w) s.w = d.w;
+    if (s.openAs){ const od = await unseal(s.openAs.key, s.id, s.openAs.idx, s.slots[s.openAs.idx]); if (od) s.openAs.data = od; }
+    if (view.idx === s.idx) view = { idx: s.idx, key: s.key, data: s.data };
+    else if (s.openAs && view.idx === s.openAs.idx) view = s.openAs;
+    else {
+      const vd = await unseal(view.key, s.id, view.idx, s.slots[view.idx]);
+      view = vd ? { ...view, data: vd } : { idx: s.idx, key: s.key, data: s.data };
+    }
+    if (isMain()) notices = notices.concat(await reconcile(s));
+    render();
+  } catch (e){ console.error(e); }
+  finally { refreshing = false; }
+}
+// Coming back to the tab: pick up changes made on another device, unless something is being edited.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && S && store.mode === "server" && $("editor").hidden && $("chpass").hidden && !picked) refreshVault();
+});
+
+/* ============ Encrypted backup file ============
+   The whole vault exactly as the server stores it: eight encrypted slots and the salt. Useless without a passphrase.
+   It can be opened in the browser (even if pswrds.com is gone) and restored when the username has no vault. */
+async function exportBackup(){
+  const b = $("backupBtn"); busy(b, true, "Saving…");
+  try {
+    let v = null;
+    try { v = await store.load(S.id); } catch {}
+    if (!v) v = { header: S.header, slots: S.slots };
+    const file = { pswrds_backup: 1, username: S.username, id: S.id, saved: new Date().toISOString(), header: v.header, slots: v.slots.map(b64) };
+    const blob = new Blob([JSON.stringify(file)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `pswrds-backup-${S.username}-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast("Backup saved. It's encrypted: it opens only with your username and passphrase.", 5000);
+  } catch (e){ console.error(e); toast("Couldn't create the backup file."); }
+  finally { busy(b, false); }
+}
+$("backupBtn").onclick = exportBackup;
+
+let backupInfo = null;   // the backup file that is open, in this browser's memory only
+$("openBackup").onclick = () => $("backupFile").click();
+$("backupFile").onchange = async () => {
+  const f = $("backupFile").files[0]; $("backupFile").value = "";
+  if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    const ok = j && j.pswrds_backup === 1 && /^[0-9a-f]{64}$/.test(j.id) && j.header && typeof j.header.salt === "string"
+      && Number.isInteger(j.header.iter) && j.header.iter >= 100000 && j.header.iter <= 10000000
+      && Array.isArray(j.slots) && j.slots.length === NSLOTS && j.slots.every(x => typeof x === "string");
+    if (!ok) throw new Error("FORMAT");
+    const slots = j.slots.map(unb64);
+    if (slots.some(x => x.length !== SLOT_LEN)) throw new Error("FORMAT");
+    const mem = Backends.memory("backup");
+    await mem.create(j.id, { iter: j.header.iter, salt: j.header.salt, n: NSLOTS }, slots);
+    store = mem; backupInfo = { name: f.name, username: j.username || "" };
+    setStatus(); syncOffline(); selectTab("u");
+    $("uUser").value = j.username || ""; $("uPass").value = ""; $("uPass").focus();
+    toast("Backup file opened. Unlock it with its username and passphrase.", 4000);
+  } catch (e){ console.error(e); toast("That isn't a pswrds backup file."); }
+};
+$("restoreBtn").onclick = async () => {
+  const b = $("restoreBtn");
+  if (!realStore || realStore.mode !== "server"){ toast("Restoring needs the pswrds.com server."); return; }
+  busy(b, true, "Restoring…");
+  try {
+    if (await realStore.load(S.id)){ toast("This username already has a vault on pswrds.com, so the backup can't be restored over it.", 6000); return; }
+    const v = await store.load(S.id);
+    await realStore.create(S.id, v.header, v.slots, S.w, null);
+    const u = S.username;
+    store = realStore; backupInfo = null; setStatus(); syncOffline(); showAuth();
+    $("uUser").value = u; $("uPass").focus();
+    toast("Restored to pswrds.com. Unlock it with your passphrase. Lifetime access isn't part of a backup.", 6000);
+  } catch (e){ console.error(e); toast(e.message === "TAKEN" ? "This username already has a vault on pswrds.com." : storeError(e)); }
+  finally { busy(b, false); }
+};
+
+/* ============ Copying records between wallets (main passphrase only) ============
+   A copy, not a link: each wallet is sealed with its own key, so the records are simply written into the
+   other wallet's slot. To the server this is one ordinary slot write. */
+let picked = null;   // Set of record ids while choosing records to copy, else null
+function cloneRecord(r){ return { ...JSON.parse(JSON.stringify(r)), id: rid() }; }
+/* Wallets the main passphrase can write to: Main plus every readable wallet, except the one on screen. */
+function copyTargets(){
+  if (!isMain() || !view) return [];
+  const all = [[S.idx, "Main"], ...Object.entries(S.data.map).filter(([, e]) => e.kind === "wallet").map(([k, e]) => [+k, e.label])];
+  return all.filter(([i]) => i !== view.idx);
+}
+async function walletData(i){
+  if (i === S.idx) return { idx: i, key: S.key, data: S.data, label: "Main" };
+  const e = S.data.map[i];
+  if (!e || e.kind !== "wallet") return null;
+  const key = await aesKey(unb64(e.key)), data = await unseal(key, S.id, i, S.slots[i]);
+  return data ? { idx: i, key, data, label: e.label } : null;
+}
+function renderCopyBar(){
+  const targets = copyTargets();
+  $("copyMode").hidden = !targets.length || !!picked;
+  $("selBar").hidden = !picked;
+  if (!picked) return;
+  const sel = $("selTarget"), prev = sel.value;
+  sel.innerHTML = targets.map(([i, l]) => `<option value="${i}">to “${esc(l)}”</option>`).join("");
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  const n = picked.size, total = (view.data.records || []).length;
+  $("selCount").textContent = n ? `${n} record${n === 1 ? "" : "s"} selected` : "Pick the records to copy";
+  $("selAll").checked = n > 0 && n === total; $("selAll").indeterminate = n > 0 && n < total;
+  $("selGo").disabled = !n;
+}
+function startCopy(ids){ picked = new Set(ids); renderRecords(); }
+function stopCopy(){ picked = null; renderRecords(); }
+$("copyMode").onclick = () => startCopy([]);
+$("selCancel").onclick = stopCopy;
+$("selAll").onchange = () => {
+  const q = $("search").value.trim().toLowerCase();
+  const recs = (view.data.records || []).filter(r => !q || [r.title, r.note, ...r.pairs.map(p => p.user)].join(" ").toLowerCase().includes(q));
+  picked = $("selAll").checked ? new Set(recs.map(r => r.id)) : new Set();
+  renderRecords();
+};
+$("recs").addEventListener("change", e => {
+  const id = e.target.dataset.pick; if (id == null || !picked) return;
+  e.target.checked ? picked.add(id) : picked.delete(id);
+  renderCopyBar();
+});
+function askDuplicates(names, label){
+  return new Promise(resolve => {
+    const list = names.slice(0, 5).map(n => `“${n}”`).join(", ") + (names.length > 5 ? ` and ${names.length - 5} more` : "");
+    $("dupText").textContent = `${names.length === 1 ? "A record named" : "Records named"} ${list} already ${names.length === 1 ? "exists" : "exist"} in “${label}”. Replace ${names.length === 1 ? "it with the copy" : "them with the copies"}, or keep both?`;
+    $("dupDlg").hidden = false;
+    $("dupDlg").onclick = e => { const b = e.target.closest("[data-dup]"); if (!b && e.target !== $("dupDlg")) return; $("dupDlg").hidden = true; resolve(b ? b.dataset.dup : ""); };
+  });
+}
+$("selGo").onclick = async () => {
+  const btn = $("selGo"), ti = +$("selTarget").value;
+  const recs = (view.data.records || []).filter(r => picked.has(r.id));
+  if (!recs.length) return;
+  busy(btn, true, "Copying…");
+  let t = null;
+  try {
+    t = await walletData(ti);
+    if (!t){ toast("That wallet can't be opened here any more."); return; }
+    const target = t.data.records || [];
+    const norm = x => (x || "").trim().toLowerCase();
+    const clashes = recs.filter(r => target.some(x => norm(x.title) === norm(r.title)));
+    let mode = "both";
+    if (clashes.length){ mode = await askDuplicates(clashes.map(r => r.title || "Untitled"), t.label); if (!mode) return; }
+    let next = target.slice();
+    if (mode === "replace") next = next.filter(x => !recs.some(r => norm(r.title) === norm(x.title)));
+    next = next.concat(recs.map(cloneRecord));
+    if (lim() && next.length > lim()){ toast(`“${t.label}” would have ${next.length} records, more than the ${lim()} a free wallet holds.`); return; }
+    const data = { ...t.data, records: next };
+    if (ti === S.idx){ const before = S.data; S.data = data; try { await saveOwn(S); } catch (e){ S.data = before; throw e; } }
+    else await writeSlot(S, ti, await seal(t.key, S.id, ti, data));
+    toast(`Copied ${recs.length} record${recs.length === 1 ? "" : "s"} to “${t.label}”`);
+    picked = null; renderRecords();
+  } catch (e){ toast(e.message === "FULL" ? `“${t ? t.label : "That wallet"}” is full (64 KB). Copy fewer records.` : storeError(e)); }
+  finally { busy(btn, false); }
+};
+
+/* ============ Change passphrase dialog ============ */
+let cpTarget = null;   // null: the passphrase you signed in with; a slot number: another passphrase (main only)
+function cpDescribe(k){
+  const m = S.data.map, e = m[k];
+  if (e.kind === "wallet") return `the passphrase that opens “${e.label}”`;
+  if (e.kind === "alias") return `the used delete passphrase that now opens “${walletLabel(m, S, e.target)}”`;
+  if (e.kind === "wipeall") return "your delete-everything passphrase";
+  return `the passphrase that deletes “${walletLabel(m, S, e.targets[0])}”`;
+}
+function openChPass(k){
+  cpTarget = k;
+  $("cpTitle").textContent = "Change passphrase";
+  $("cpLead").textContent = k == null
+    ? (isMain() ? "This changes your main passphrase. Your other passphrases keep working." : "This changes the passphrase you signed in with.")
+    : `This changes ${cpDescribe(k)}. Whoever uses the old one won't get in any more.`;
+  $("cpOldF").hidden = k != null;
+  ["cpOld", "cpNew", "cpNew2"].forEach(id => { $(id).value = ""; $(id).type = "password"; });
+  $("cpErr").textContent = "";
+  $("chpass").hidden = false;
+  (k == null ? $("cpOld") : $("cpNew")).focus();
+}
+function closeChPass(){ $("chpass").hidden = true; cpTarget = null; ["cpOld", "cpNew", "cpNew2"].forEach(id => $(id).value = ""); }
+$("chPassBtn").onclick = () => openChPass(null);
+$("cpCancel").onclick = closeChPass;
+$("chpass").addEventListener("mousedown", e => { if (e.target === $("chpass")) closeChPass(); });
+$("fChPass").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const err = $("cpErr"), btn = $("cpGo"), p = $("cpNew").value, k = cpTarget;
+  err.textContent = "";
+  if (p.length < 10){ err.textContent = "The new passphrase needs at least 10 characters."; return; }
+  if (p !== $("cpNew2").value){ err.textContent = "The two new passphrases don't match."; return; }
+  busy(btn, true, "Changing…");
+  try {
+    if (k == null){
+      const cur = await deriveRaw($("cpOld").value, unb64(S.header.salt), S.header.iter);
+      if (b64(cur) !== b64(S.raw)){ err.textContent = "The current passphrase isn't right."; return; }
+      await changeOwnPassphrase(S, p);
+    } else await changeEntryPassphrase(S, k, p);
+    const dropped = quickDrop(S.id, k == null ? S.idx : k);
+    closeChPass(); render(); toast(dropped ? "Passphrase changed. Fingerprint unlock for this wallet was turned off on this device; set it up again." : "Passphrase changed", dropped ? 5000 : 2600);
+  } catch (e){
+    err.textContent = e.message === "SAME" ? "That's the current passphrase. Choose a new one."
+      : e.message === "DUP" ? "That passphrase is already used in this vault. Choose a different one."
+      : e.message === "GONE" ? "This passphrase's slot can't be opened any more. Lock and unlock, then try again."
+      : storeError(e);
+    if (!["SAME", "DUP", "GONE"].includes(e.message)) console.error(e);
+  } finally { busy(btn, false); }
+});
+
+/* ============ Fingerprint unlock (one wallet per device) ============
+   Uses a passkey with the WebAuthn "prf" extension: after a fingerprint or face check, the device's
+   authenticator returns a secret that never leaves this device. That secret locks a copy of ONE wallet's
+   key (never Main's), kept in this browser's localStorage. The server is not involved and learns nothing.
+   Changing that wallet's passphrase, or deleting the wallet, stops it from working. */
+const QK = "pswrds-quick";
+let quickOK = false;
+async function quickSupported(){
+  try {
+    if (!window.PublicKeyCredential || !navigator.credentials) return false;
+    if (!(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())) return false;
+    if (PublicKeyCredential.getClientCapabilities){
+      const c = await PublicKeyCredential.getClientCapabilities();
+      if (c && c["extension:prf"] === false) return false;
+    }
+    return true;
+  } catch { return false; }
+}
+function quickGet(){ try { const r = JSON.parse(localStorage.getItem(QK)); return r && r.v === 1 ? r : null; } catch { return null; } }
+function quickDel(){ try { localStorage.removeItem(QK); } catch {} }
+function quickIs(id, idx){ const r = quickGet(); return !!r && r.id === id && r.idx === idx; }
+function quickDrop(id, idx){ if (!quickIs(id, idx)) return false; quickDel(); syncQuick(); return true; }
+const qAad = (id, idx) => enc.encode("pswrds-quick:" + id + ":" + idx);
+async function quickKey(secret){
+  const base = await crypto.subtle.importKey("raw", secret, "HKDF", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(32), info: enc.encode("pswrds-quick-v1") },
+    base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function prfEval(credId, salt){
+  const c = await navigator.credentials.get({ publicKey: { challenge: rndBytes(32), timeout: 60000, userVerification: "required",
+    allowCredentials: [{ type: "public-key", id: credId }], extensions: { prf: { eval: { first: salt } } } } });
+  const r = c && c.getClientExtensionResults().prf, f = r && r.results && r.results.first;
+  if (!f) throw new Error("NOPRF");
+  return new Uint8Array(f);
+}
+async function quickSetup(id, idx, raw, user){
+  const salt = rndBytes(32);
+  const cred = await navigator.credentials.create({ publicKey: {
+    rp: { name: "pswrds" }, user: { id: rndBytes(16), name: "pswrds wallet", displayName: "pswrds wallet" },
+    challenge: rndBytes(32), timeout: 60000, attestation: "none",
+    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "preferred", userVerification: "required" },
+    extensions: { prf: { eval: { first: salt } } } } });
+  const ext = cred.getClientExtensionResults().prf || {};
+  if (ext.enabled === false) throw new Error("NOPRF");
+  const credId = new Uint8Array(cred.rawId);
+  // Some devices only return the secret when the passkey is used, not when it is made: then ask once more.
+  const secret = ext.results && ext.results.first ? new Uint8Array(ext.results.first) : await prfEval(credId, salt);
+  const k = await quickKey(secret), iv = rndBytes(12);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: qAad(id, idx) }, k, enc.encode(JSON.stringify({ raw: b64(raw), user }))));
+  try { localStorage.setItem(QK, JSON.stringify({ v: 1, id, idx, cred: b64(credId), salt: b64(salt), iv: b64(iv), ct: b64(ct) })); }
+  catch { throw new Error("NOSTORE"); }
+}
+/* Opens one wallet slot with its key directly, as if its passphrase had been typed. */
+async function openWithRaw(id, idx, raw){
+  const v = await store.load(id);
+  if (!v) return null;
+  const key = await aesKey(raw), d = await unseal(key, id, idx, v.slots[idx]);
+  if (!d || d.kind !== "wallet") return null;
+  return { id, header: v.header, slots: v.slots, vers: v.vers || v.slots.map(() => 0), raw, key, idx, data: d, w: d.w, limit: v.limit ?? null };
+}
+function syncQuick(){ $("qGo").hidden = !(quickOK && store && store.mode === "server" && quickGet()); }
+/* The raw key of the wallet on screen, if it may use fingerprint unlock (any wallet except Main). */
+function viewRaw(){
+  if (!view || view.data.kind !== "wallet") return null;
+  if (view.idx === S.idx) return S.raw || null;
+  if (S.openAs && view.idx === S.openAs.idx) return S.openAs.raw || null;
+  const e = isMain() && S.data.map[view.idx];
+  return e && e.kind === "wallet" && e.key ? unb64(e.key) : null;
+}
+function syncQuickBtn(){
+  const b = $("quickBtn");
+  b.hidden = !(quickOK && store.mode === "server" && viewRaw());
+  if (!b.hidden) b.textContent = quickIs(S.id, view.idx) ? "Fingerprint: on" : "Fingerprint";
+}
+function openQuick(){
+  const on = quickIs(S.id, view.idx), other = !on && !!quickGet();
+  $("qLead").textContent = on
+    ? `Fingerprint unlock is on for “${view.data.name || "this wallet"}” on this device. The unlock screen shows an “Unlock with fingerprint” button that opens this wallet only.`
+    : `Open “${view.data.name || "this wallet"}” on this device with your fingerprint or face (Touch ID, Face ID or your phone's screen lock) instead of typing its passphrase. Set it up separately on each device.`;
+  $("qReplace").hidden = !other; $("qErr").textContent = "";
+  $("qOn").hidden = on; $("qOff").hidden = !on;
+  $("quick").hidden = false;
+}
+function closeQuick(){ $("quick").hidden = true; }
+$("quickBtn").onclick = openQuick;
+$("qCancel").onclick = closeQuick;
+$("quick").addEventListener("mousedown", e => { if (e.target === $("quick")) closeQuick(); });
+$("qOff").onclick = () => { quickDel(); syncQuick(); closeQuick(); render(); toast("Fingerprint unlock turned off on this device"); };
+$("qOn").onclick = async () => {
+  const raw = viewRaw(), btn = $("qOn"); if (!raw) return;
+  $("qErr").textContent = "";
+  busy(btn, true, "Waiting for fingerprint…");
+  try {
+    await quickSetup(S.id, view.idx, raw, S.username);
+    syncQuick(); closeQuick(); render(); toast("Fingerprint unlock is on for this wallet");
+  } catch (e){
+    console.error(e);
+    $("qErr").textContent = e.name === "NotAllowedError" || e.name === "AbortError" ? "Cancelled, or the fingerprint check didn't finish. Try again."
+      : e.message === "NOPRF" ? "This browser can't use fingerprint unlock for pswrds yet. If a “pswrds wallet” passkey was just saved, you can delete it in your device's password settings."
+      : e.message === "NOSTORE" ? "This browser won't let pswrds store anything (private browsing?), so fingerprint unlock can't be set up here."
+      : "Fingerprint unlock couldn't be set up on this device.";
+  } finally { busy(btn, false); }
+};
+$("qGo").onclick = async () => {
+  const r = quickGet(), btn = $("qGo"); if (!r){ syncQuick(); return; }
+  $("uErr").textContent = "";
+  btn.disabled = true; $("qGoT").textContent = "Waiting for fingerprint…";
+  try {
+    let secret;
+    try { secret = await prfEval(unb64(r.cred), unb64(r.salt)); }
+    catch (e){ if (e.name === "NotAllowedError" || e.name === "AbortError") return; throw e; }
+    let inner;
+    try { inner = JSON.parse(dec.decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(r.iv), additionalData: qAad(r.id, r.idx) }, await quickKey(secret), unb64(r.ct)))); }
+    catch { throw new Error("NOPRF"); }
+    const s = await openWithRaw(r.id, r.idx, unb64(inner.raw));
+    if (!s){
+      quickDel(); syncQuick();
+      $("uErr").textContent = "Fingerprint unlock has stopped working, for example because the passphrase was changed. Unlock with your passphrase, then set it up again.";
+      return;
+    }
+    S = s; S.username = inner.user; notices = [];
+    enterVault();
+  } catch (e){
+    console.error(e);
+    $("uErr").textContent = e.message === "NOPRF" ? "Fingerprint unlock didn't work. Unlock with your passphrase." : storeError(e);
+  } finally { btn.disabled = offline(); $("qGoT").textContent = "Unlock with fingerprint"; }
+};
+
+/* ============ Free limit and lifetime access ============
+   Free vaults hold S.limit records per wallet (null = unlimited). The server can't see records, so the
+   app enforces this. A payment is a BTCPay invoice that the server creates without knowing the vault;
+   once it settles, the server returns a license code, and the app applies it to this vault.
+   A payment in progress is remembered inside the wallet on screen (encrypted), so it can finish later. */
+const PRICE = "$20";
+const lim = () => S && S.limit ? S.limit : null;
+const atLimit = () => !!lim() && (view.data.records || []).length >= lim();
+function newRecord(){ atLimit() ? openUpgrade() : openEditor(null); }
+
+function renderQuota(){
+  const L = lim(), box = $("quota");
+  if (!L || !view){ box.hidden = true; return; }
+  const n = (view.data.records || []).length, full = n >= L;
+  box.hidden = false; box.classList.toggle("full", full);
+  $("quotaText").textContent = full ? `This wallet has all ${L} free records.` : `${n} of ${L} free records in this wallet.`;
+  $("quotaBtn").textContent = full ? "Remove the limit" : `Unlimited: ${PRICE} once`;
+  $("quotaBtn").classList.toggle("primary", full);
+}
+
+let payTimer = null, payBusy = false;
+function stopPayPoll(){ clearTimeout(payTimer); payTimer = null; }
+function pending(){ return view && view.data.pay && view.data.pay.invoice ? view.data.pay : null; }
+async function setPending(p){
+  const prev = view.data.pay;
+  if (p) view.data.pay = p; else delete view.data.pay;
+  try { await saveView(); } catch (e){ view.data.pay = prev; throw e; }
+}
+
+function openUpgrade(){
+  if (!lim()) return;
+  $("upLead").textContent = `Free vaults hold ${lim()} records in each wallet. A one-time payment of ${PRICE} removes the limit for every wallet in this vault, for life.`;
+  $("upStart").textContent = `Pay ${PRICE} in crypto`;
+  $("upErr").textContent = ""; $("upDone").hidden = true; $("upHave").open = false; $("upLic").value = "";
+  $("upIntro").hidden = $("upHave").hidden = false;
+  syncUpgrade();
+  $("upgrade").hidden = false;
+  if (pending()) pollPayment(true);
+}
+function closeUpgrade(){ $("upgrade").hidden = true; }
+function syncUpgrade(status){
+  const p = pending();
+  $("upPay").hidden = !!p; $("upWait").hidden = !p;
+  if (p){
+    $("upLink").href = p.link;
+    $("upStatus").textContent = status === "partial"
+      ? `Part of the payment arrived, but less than ${PRICE}. Send the rest from the payment page, using the same link.`
+      : status === "processing"
+      ? "Payment received. Waiting for network confirmations: this can take up to an hour. You can close this window. It finishes on its own while the vault is unlocked, or the next time you unlock it."
+      : "Pay on the payment page, then come back here. This window updates by itself.";
+  }
+}
+
+$("upStart").onclick = async () => {
+  const b = $("upStart"); $("upErr").textContent = "";
+  busy(b, true, "Preparing payment…");
+  try {
+    const j = await store.payStart();
+    await setPending({ invoice: j.invoice, claim: j.claim, link: j.link });
+    syncUpgrade();
+    schedulePoll(6000);
+  } catch (e){ $("upErr").textContent = payError(e); }
+  finally { busy(b, false); }
+};
+$("upCancel").onclick = async () => {
+  try { await setPending(null); } catch (e){ $("upErr").textContent = storeError(e); return; }
+  stopPayPoll(); syncUpgrade();
+};
+$("upClose").onclick = closeUpgrade;
+$("upgrade").addEventListener("mousedown", e => { if (e.target === $("upgrade")) closeUpgrade(); });
+$("upCopy").onclick = () => copyText($("upCode").textContent);
+$("fLicense").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const code = $("upLic").value.trim(), b = $("upApply");
+  if (!code) return;
+  $("upErr").textContent = "";
+  busy(b, true, "Applying…");
+  try { await applyLicense(code, false); }
+  catch (e){ $("upErr").textContent = e.message === "LICENSE" ? "That license code isn't valid or has already been used." : storeError(e); }
+  finally { busy(b, false); }
+});
+
+function payError(e){
+  return e && e.message === "PAY" ? "The payment service isn't responding right now. Try again in a few minutes." : storeError(e);
+}
+
+function schedulePoll(ms){ stopPayPoll(); payTimer = setTimeout(() => pollPayment(false), ms); }
+async function pollPayment(now){
+  const p = pending();
+  if (!p || !S){ stopPayPoll(); return; }
+  if (payBusy) return;
+  payBusy = true;
+  let next = $("upgrade").hidden ? 20000 : 6000;
+  try {
+    const j = await store.payCheck(p.invoice, p.claim);
+    if (!j || j.status === "expired" || j.status === "invalid"){
+      await setPending(null); stopPayPoll(); syncUpgrade();
+      $("upErr").textContent = !j ? "This payment request can't be found any more. Start again."
+        : j.status === "expired" ? "The payment request expired before a payment arrived. Start again if you still want to pay."
+        : "The payment wasn't completed: it arrived too late or was too small. If you sent money, keep the payment page link: it shows what happened to the payment.";
+      return;
+    }
+    if (j.status === "settled"){ stopPayPoll(); await applyLicense(j.code, true); return; }
+    syncUpgrade(j.status);
+  } catch (e){ if (!$("upgrade").hidden) $("upErr").textContent = payError(e); next = 30000; }
+  finally { payBusy = false; }
+  if (pending() && S) schedulePoll(next);
+}
+
+/* paidNow: the code comes from a payment that just settled (rather than typed in). */
+async function applyLicense(code, paidNow){
+  try { await store.redeem(S.id, S.w, code); }
+  catch (e){
+    // Keep the code visible so it isn't lost, and let the user retry with Apply.
+    if (paidNow){ showCode(code, false); $("upHave").open = true; $("upLic").value = code; }
+    throw e;
+  }
+  S.limit = null;
+  if (pending()) { try { await setPending(null); } catch {} }
+  stopPayPoll();
+  if (!$("upgrade").hidden){ syncUpgrade(); $("upPay").hidden = $("upIntro").hidden = $("upHave").hidden = true; $("upErr").textContent = ""; showCode(code, true); }
+  else toast("Payment confirmed. Unlimited records are unlocked.");
+  render();
+}
+function showCode(code, ok){
+  $("upDone").hidden = false; $("upCode").textContent = code;
+  $("upDoneText").innerHTML = ok ? "<b>Paid. Thank you.</b> Every wallet in this vault now has unlimited records." : "<b>Payment confirmed.</b> Applying it to this vault didn't work yet. Keep this license code and press Apply below.";
+  $("upCodeHint").textContent = ok ? "Your license code, as a receipt. It has been used and you don't need it any more." : "";
+}
+
+/* On unlock: finish a payment that was started earlier, or forget one that is no longer needed. */
+async function resumePayment(){
+  const p = pending();
+  if (!p) return;
+  if (!lim()){ try { await setPending(null); } catch {} return; }
+  pollPayment(true).catch(() => {});
+}
+
+/* ============ Lock and auto-lock ============ */
+$("lockBtn").onclick = () => { showAuth(); toast("Locked"); };
+["pointerdown", "keydown", "scroll"].forEach(ev => addEventListener(ev, () => lastActive = Date.now(), { passive: true }));
+setInterval(() => { if (S && Date.now() - lastActive > 10 * 60 * 1000){ showAuth(); toast("Locked after 10 minutes without activity"); } }, 20000);
+document.addEventListener("keydown", e => { if (e.key === "Escape"){ if (!$("kbdWrap").hidden) closeKbd(); else if (!$("editor").hidden) closeEditor(); else if (!$("upgrade").hidden) closeUpgrade(); else if (!$("chpass").hidden) closeChPass(); else if (!$("quick").hidden) closeQuick(); else if (!$("dupDlg").hidden) $("dupDlg").click(); else if (picked){ stopCopy(); } } });
+
+/* ============ Install as an app (Android Chrome, desktop Chrome/Edge) ============ */
+let installEvt = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("installBtn").hidden = false; });
+addEventListener("appinstalled", () => { installEvt = null; $("installBtn").hidden = true; toast("pswrds installed. Open it from your home screen."); });
+$("installBtn").onclick = async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  try { await installEvt.userChoice; } catch {}
+  installEvt = null; $("installBtn").hidden = true;
+};
+
+/* ============ Boot ============ */
+(async () => {
+  let db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
+  if (!window.isSecureContext || !crypto.subtle){
+    $("booting").innerHTML = '<p class="warn" style="max-width:46ch">pswrds needs a secure connection. Open this page with <b>https://</b> at the start of the address.</p>';
+    return;
+  }
+  if (db) realStore = Backends.cloud(db);
+  else if (/^https?:$/.test(location.protocol)){ realStore = Backends.server("api.php"); serverUp = await pingServer(); }
+  else { try { localStorage.setItem("pswrds/_t", "1"); localStorage.removeItem("pswrds/_t"); realStore = Backends.local(); } catch { realStore = Backends.memory(); } }
+  store = realStore; setStatus();
+  $("retryBtn").onclick = retryServer;
+  if (store.mode === "server" && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  quickOK = store.mode === "server" && await quickSupported();
+  $("booting").hidden = true; showAuth(); syncOffline(); syncDemo();
+  // An invitation code passed from the extra-features page, within this tab only (never in the address).
+  let inv = null;
+  try { inv = sessionStorage.getItem("pswrds-invite"); sessionStorage.removeItem("pswrds-invite"); } catch {}
+  if (inv && isInviteFormat(inv)){ selectTab("c"); $("cInvite").value = inv; $("cUser").focus(); toast("Invitation code filled in"); }
+})();
+
+})();
+</script>
+<script>
+/* Light/dark switch. Until someone picks, the device's own setting decides. The choice stays in this browser only. */
+(() => {
+  const K = "pswrds-theme", root = document.documentElement, mq = matchMedia("(prefers-color-scheme: dark)");
+  const eff = () => root.dataset.theme || (mq.matches ? "dark" : "light");
+  function apply(){
+    document.querySelectorAll(".theme-switch [data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === eff()));
+    document.querySelectorAll("picture source[data-dark]").forEach(s => s.media = root.dataset.theme === "dark" ? "all" : root.dataset.theme === "light" ? "not all" : "(prefers-color-scheme: dark)");
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-theme-set]"); if (!b) return;
+    root.dataset.theme = b.dataset.themeSet;
+    try { localStorage.setItem(K, b.dataset.themeSet); } catch {}
+    apply();
+  });
+  mq.addEventListener("change", apply);
+  apply();
+})();
+</script>

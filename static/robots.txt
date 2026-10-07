@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /api.php
+
+Sitemap: https://pswrds.com/sitemap.xml
