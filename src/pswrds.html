@@ -101,6 +101,7 @@ label.f,div.f{display:grid;gap:4px;min-width:0}
 
 /* Vault */
 .vhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:2px}
+.vhead.bare{margin-bottom:14px}
 .vhead h2{font:600 21px/1.2 var(--f-display);min-width:0;overflow-wrap:anywhere}
 .sub{color:var(--muted);font-size:13px;margin-bottom:12px}
 .switch{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none}
@@ -1126,7 +1127,11 @@ function render(){
   $("wName").textContent = view.data.name || "Wallet";
   $("wSub").textContent = main
     ? (own ? `Signed in as ${S.username} with your main passphrase.` : `Viewing “${view.data.name}” through your main passphrase.`)
-    : `Signed in as ${S.username}.`;
+    : "";
+  // An ordinary vault and a wallet opened with its own passphrase show no name and no username:
+  // nothing on screen hints that this is one of several wallets. Only the main passphrase sees names.
+  $("wName").hidden = $("renameBtn").hidden = $("wSub").hidden = !main;
+  document.querySelector(".vhead").classList.toggle("bare", !main);
   $("notices").innerHTML = notices.map((n, i) => `<div class="notice"><p>${esc(n)}</p><button class="btn ghost sm" data-dismiss="${i}">Dismiss</button></div>`).join("");
   $("switcher").hidden = !main; $("vtabs").hidden = !main;
   if (main){
@@ -1743,11 +1748,12 @@ function syncQuickBtn(){
   b.hidden = !(quickOK && store.mode === "server" && viewRaw());
   if (!b.hidden) b.textContent = quickIs(S.id, view.idx) ? "Fingerprint: on" : "Fingerprint";
 }
+const quickName = () => isMain() && view.data.name ? `“${view.data.name}”` : "this wallet";
 function openQuick(){
   const on = quickIs(S.id, view.idx), other = !on && !!quickGet();
   $("qLead").textContent = on
-    ? `Fingerprint unlock is on for “${view.data.name || "this wallet"}” on this device. The unlock screen shows an “Unlock with fingerprint” button that opens this wallet only.`
-    : `Open “${view.data.name || "this wallet"}” on this device with your fingerprint or face (Touch ID, Face ID or your phone's screen lock) instead of typing its passphrase. Set it up separately on each device.`;
+    ? `Fingerprint unlock is on for ${quickName()} on this device. The unlock screen shows an “Unlock with fingerprint” button that opens this wallet only.`
+    : `Open ${quickName()} on this device with your fingerprint or face (Touch ID, Face ID or your phone's screen lock) instead of typing its passphrase. Set it up separately on each device.`;
   $("qReplace").hidden = !other; $("qErr").textContent = "";
   $("qOn").hidden = on; $("qOff").hidden = !on;
   $("quick").hidden = false;

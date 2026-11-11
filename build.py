@@ -14,8 +14,11 @@ from pathlib import Path
 root = Path(__file__).parent
 pub = root / "public"
 if pub.exists():
-    shutil.rmtree(pub)   # start clean, so renamed or removed files don't linger
-pub.mkdir()
+    try:
+        shutil.rmtree(pub)   # start clean, so renamed or removed files don't linger
+    except PermissionError:
+        print("Note: couldn't empty public/ (no permission to delete); files are overwritten instead.")
+pub.mkdir(exist_ok=True)
 SITE = "https://pswrds.com/"
 # Pages listed in sitemap.xml (the statistics page is deliberately left out).
 SITEMAP = [("", root / "src" / "pswrds.html"), ("faq.html", None), ("duress-passphrase.html", None),
